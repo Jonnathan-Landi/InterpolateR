@@ -4,7 +4,7 @@
 #' MS-GOP is a machine learning algorithm for merging satellite-based and ground precipitation data.
 #' It combines Random Forest for spatial prediction, residual modeling for bias correction, and quantile mapping for final adjustment, ensuring accurate precipitation estimates across different temporal scales
 #'
-IDW <- function(BD_Obs, BD_Coord, shapefile, resolution, idp = 2) {
+IDW <- function(BD_Obs, BD_Coord, shapefile, resolution, idp = 2, n_round = 1) {
   ##############################################################################
   #                    Check input data from on-site stations                  #
   ##############################################################################
@@ -58,62 +58,54 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, resolution, idp = 2) {
   ##############################################################################
   #                          IDW algotithm                                     #
   ##############################################################################
-  data_IDW = as.data.frame(spl_layer, xy = TRUE)
-  setDT(data_IDW)
-  distancias = (distance(vect(data_IDW, geom = c("x", "y"), crs = "EPSG:32717"),
-                         Points_VectTrain) / 1000) # Distancias en km
-
-  weigths = function(d, idp) {
-    return (1 / (d ^ idp))
-  }
-
-  for (i in seq_along(Points_VectTrain$Cod)) {
-    data_IDW[, (Points_VectTrain$Cod[i]) := distancias[, i]]
-  }
+  data_IDW <- as.data.table(as.data.frame(spl_layer, xy = TRUE))
+  data_IDW <- data_IDW[, .(x = x, y = y)]
+  coords <- as.matrix(data_IDW[, .(x, y)])
+  distancias <- as.data.table(distance(vect(coords, crs = crs(spl_layer)), Points_VectTrain) / 1000)
+  setnames(distancias,  Points_VectTrain$Cod)
+  data_IDW = cbind(data_IDW, distancias)
 
   estaciones = as.character(Points_VectTrain$Cod)
-  for (est in estaciones) {
-    data_IDW[, paste0("den_", est) := weigths(get(est), idp)]
-  }
+  denoms <- lapply(estaciones, function(est) 1 / (data_IDW[[est]]^idp))
+  denoms_dt <- setnames(as.data.table(denoms), paste0("d_", estaciones))
 
-  w_cols = grep("^den_", names(data_IDW), value = TRUE) # Esto es directamente el 1 / d^idp
-  stations = sub("^den_", "", w_cols)
   idw = function(data_obs) {
-    for (i in seq_along(stations)) {
-      station = stations[i]
-      var_value = data_obs[Cod == station, var]
-      data_IDW[, paste0("numer_", station) := ((var_value / get(w_cols[i])))]
-      data_IDW[, paste0("denom_", station) := (1 / get(w_cols[i]))]
-    }
-    data_IDW[, var := rowSums(.SD, na.rm = TRUE) / rowSums(.SD, na.rm = TRUE),
-             .SDcols = c(grep("^numer_", names(data_IDW), value = TRUE),
-                         grep("^denom_", names(data_IDW), value = TRUE))]
-    data_IDW = data_IDW[, .(x,y,var)]
-
-
-
+    obs_values <- setNames(data_obs$var, data_obs$Cod)
+    nums <- lapply(estaciones, function(est) {
+      if (est %in% names(obs_values)) {
+        obs_values[est] / (data_IDW[[est]]^idp)
+      } else {
+        rep(NA_real_, nrow(data_IDW))
+      }
+    })
+    nums_dt <- setnames(as.data.table(nums), paste0("n_", estaciones))
+    result <- data_IDW[, .(x, y)]
+    result[, sum_n := rowSums(nums_dt, na.rm = TRUE)]
+    result[, sum_d := rowSums(denoms_dt, na.rm = TRUE)]
+    result[, value := sum_n / sum_d]
+    result <- result[, .(x, y, value)]
+    result <- rast(result, crs = crs(spl_layer))
+    return(result)
   }
 
 
-
-  idw_model = function(day) {
+  call_idw = function(day) {
     data_obs <- training_data[Date == as.Date(day), ]
     if (sum(data_obs$var, na.rm = TRUE) == 0) {
-      Ensamble <- spl_layer
+      return(spl_layer)
     } else {
-
-    } # End of if
+      return ((idw(data_obs)))
+    }
   }
 
+  pbapply::pboptions(type = "timer", use_lb = T, style = 1, char = "=")
+  message("Analysis in progress. Please wait...")
+  raster_Model <- pbapply::pblapply(Dates_extracted, function(day) {
+    call_idw(day)
+  })
+  Ensamble <- terra::rast(raster_Model)
+  if (!is.null(n_round)) Ensamble <- terra::app(Ensamble, \(x) round(x, n_round))
+  names(Ensamble) <- as.character(Dates_extracted)
+  return(Ensamble)
+}
 
-
-} # End of IDW function
-
-# library(data.table)
-# library(terra)
-# BD_Obs = fread("C:/GitHub/InterpolateR/inst/extdata/BD_Insitu.csv")
-# BD_Coord = fread("C:/GitHub/InterpolateR/inst/extdata/Cords_Insitu.csv")
-# shapefile = vect("D:/ultimo_WINDOWS/SUBCUENCAS/TOMEBAMBA/CuencaRioTomebamba.shp")
-# resolution = 5
-# idp = 2
-# plot(shapefile)
