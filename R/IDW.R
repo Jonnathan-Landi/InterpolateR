@@ -109,11 +109,11 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, resolution, idp = 2) {
 
 } # End of IDW function
 
-library(data.table)
-library(terra)
-BD_Obs = fread("C:/GitHub/InterpolateR/inst/extdata/BD_Insitu.csv")
-BD_Coord = fread("C:/GitHub/InterpolateR/inst/extdata/Cords_Insitu.csv")
-shapefile = vect("D:/ultimo_WINDOWS/SUBCUENCAS/TOMEBAMBA/CuencaRioTomebamba.shp")
-resolution = 5
-idp = 2
-plot(shapefile)
+# library(data.table)
+# library(terra)
+# BD_Obs = fread("C:/GitHub/InterpolateR/inst/extdata/BD_Insitu.csv")
+# BD_Coord = fread("C:/GitHub/InterpolateR/inst/extdata/Cords_Insitu.csv")
+# shapefile = vect("D:/ultimo_WINDOWS/SUBCUENCAS/TOMEBAMBA/CuencaRioTomebamba.shp")
+# resolution = 5
+# idp = 2
+# plot(shapefile)

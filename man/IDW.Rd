@@ -4,7 +4,7 @@
 \alias{IDW}
 \title{Inverse distance weighted interpolation (IDW)}
 \usage{
-IDW(BD_Obs, BD_Coord, shapefile, resolution)
+IDW(BD_Obs, BD_Coord, shapefile, resolution, idp = 2)
 }
 \description{
 MS-GOP is a machine learning algorithm for merging satellite-based and ground precipitation data.
