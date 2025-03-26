@@ -6,12 +6,15 @@ Authors@R:
     c(person("Jonnathan", "Landi", email = "jonnathan.landi@outlook.com",
                   role = c("aut", "cre", "cph"), comment = c(ORCID = "0009-0003-3162-6647")))
 Maintainer: Jonnathan Landi <jonnathan.landi@outlook.com>                
-Description: Spatial interpolation toolkit designed for environmental and geospatial applications. It includes a range of methods, from traditional techniques to advanced machine learning approaches, ensuring accurate and efficient estimation of values in unobserved locations. Ideal for large-scale interpolation tasks
+Description: Spatial interpolation toolkit designed for environmental and geospatial applications. It includes a range of methods, from traditional techniques to advanced machine learning approaches, ensuring accurate and efficient estimation of values in unobserved locations.
 License: GPL (>=3)
 Depends: R (>= 4.4.0)
-Imports: terra, randomForest, data.table, pbapply
+Imports: terra, data.table, pbapply
 URL: https://github.com/Jonnathan-Landi/InterpolateR
 BugReports: https://github.com/Jonnathan-Landi/InterpolateR/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
