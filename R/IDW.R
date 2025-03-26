@@ -188,5 +188,3 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, resolution, p = 2, n_round = 1) {
   names(Ensamble) <- as.character(Dates_extracted)
   return(Ensamble)
 }
-
-#
