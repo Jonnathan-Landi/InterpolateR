@@ -32,10 +32,23 @@ utils::globalVariables(c("Cod", "ID", "Date", "var", "sum_n", "sum_d", "value", 
 #'    Longitude of the station in UTM format.
 #' @param shapefile A shapefile defining the study area, used to constrain the interpolation to the region of interest.
 #'   The shapefile must be of class `SpatVector` (from the `terra` package) and should have a UTM coordinate reference system.
-#' @param resolution A numeric value indicating the resolution of the interpolation grid in kilometers (`km`).
+#' @param grid_resolution A numeric value indicating the resolution of the interpolation grid in kilometers (`km`).
 #' @param p 'Numeric' value that controls how the influence decreases with distance. The default value is 2
 #' @param n_round An integer specifying the number of decimal places to round the interpolated results.
 #'   If set to `NULL`, all decimal places will be preserved. The default value is `1`.
+#' @param training Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 % of the data will be used for training and 20 % for validation.
+#' If you do not want to perform validation, set training = 1. (Default training = 1).
+#' @param stat_validation A character vector specifying the names of the stations to be used for validation.
+#'  This option should only be filled in when it is desired to manually enter the stations used for validation. If this parameter is NULL, and the formation is different from 1, a validation will be performed using random stations.
+#'  The vector must contain the names of the stations selected by the user for validation.
+#'  For example, stat_validation = c(“ST001”, “ST002”). (Default stat_validation = NULL).
+#' @param Rain_threshold #List of numerical vectors defining precipitation thresholds to classify precipitation into different categories according to its intensity.
+#'  This parameter should be entered only when the validation is to include categorical metrics such as Critical Success Index (CSI), Probability of Detection (POD), False Alarm Rate (FAR), etc.
+#'  Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
+#'  \strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.
+#' @param save_model Logical value indicating whether the interpolation file should be saved to disk. The default value is `FALSE`. indicating that the interpolated file should not be saved.
+#     If set to `TRUE`, be sure to set the working directory beforehand using `setwd(path)` to specify where the files should be saved.
+#' @param name_save Character string indicating the name under which the interpolation raster file will be saved. By default the algorithm sets as output name: 'Model_IDW'.
 #' @examples
 #' \donttest{
 #' library(InterpolateR)
@@ -47,7 +60,9 @@ utils::globalVariables(c("Cod", "ID", "Date", "var", "sum_n", "sum_d", "value", 
 #'  shapefile <- terra::vect(system.file("extdata/study_area.shp", package = "InterpolateR"))
 #'
 #'  # Perform the interpolation
-#'  Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, resolution = 5, p = 2, n_round = 1)
+#'  Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
+#'                           n_round = 1, training = 0.8, Rain_threshold = NULL,
+#'                           stat_validation = NULL, save_model = FALSE, name_save = NULL)
 #' }
 #' @section Details:
 #'  Inverse distance weighting (IDW) works as a deterministic mathematical interpolator that assumes
@@ -69,18 +84,38 @@ utils::globalVariables(c("Cod", "ID", "Date", "var", "sum_n", "sum_d", "value", 
 #'   \item{\eqn{d(s_0, s_i)}}{ is the distance between the unknown point \eqn{s_0} and the known point \eqn{s_i}.}
 #'   \item{\eqn{p}}{ is the power parameter that controls how the influence decreases with distance.}
 #' }
-#' @return A `SpatRaster` object (from the `terra` package) where:
-#'   - Each layer (`raster band`) corresponds to the interpolated values for a specific date in `BD_Obs$Date`.
-#'   - The spatial resolution is defined by the `resolution` parameter (in km).
-#'   - The coordinate reference system (CRS) matches that of the input `shapefile`.
+#' The `Rain_threshold` parameter is used to calculate categorical metrics such as the Critical Success Index (CSI),
+#'  Probability of Detection (POD), False Alarm Rate (FAR), success ratio (SR), Hit BIAS (HB),Heidke Skill Score (HSS);
+#'   Hanssen-Kuipers Discriminant (HK); Equal Threat Score (ETS) or Gilbert Skill Score.
+#'   The parameter should be entered as a named list, where each item represents a category and the name of the item is the category name.
+#'   The elements of each category must be a numeric vector with two values: the lower and upper limits of the category.
+#'   For example:
+#' #' \code{Rain_threshold = list(
+#'   no_rain = c(0, 1),
+#'   light_rain = c(1, 5),
+#'   moderate_rain = c(5, 20),
+#'   heavy_rain = c(20, 40),
+#'   violent_rain = c(40, Inf)
+#' )}
+#'
+#' Precipitation values will be classified into these categories based on their intensity.
+#' Users can define as many categories as necessary, or just two (e.g., "rain" vs. "no rain").
+#' It is important that these categories are entered according to the study region, as each study region may have its own categories.
+#' @return The return value will depend on whether validation has been performed or not.
+#' If validation is not performed, the function will return a `SpatRaster` object with the interpolated values.
+#' If validation is performed, the function will return a list with two elements:
+#'  - `Ensamble`: A `SpatRaster` object with the interpolated values.
+#'  - `Validation`: A `data.table` with the validation results, including goodness-of-fit metrics and categorical metrics (if `Rain_threshold` is provided).
 #' @references Shepard, D. (1968) A two-dimensional interpolation function for irregularly-spaced data. Proceedings of the 1968 ACM National Conference, 1968, pages 517--524. DOI: 10.1145/800186.810616
 #' @author Jonnathan Landi <jonnathan.landi@outlook.com>
+#' @export
 
-IDW <- function(BD_Obs, BD_Coord, shapefile, resolution, p = 2, n_round = 1) {
+IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
+                n_round = NULL, training = 1, stat_validation = NULL,
+                Rain_threshold = NULL, save_model = FALSE, name_save = NULL) {
   ##############################################################################
   #                               Check input data                             #
   ##############################################################################
-  # shapefile must be a 'spatVector' object and coordinate reference system (CRS) must be defined
   if (!inherits(shapefile, "SpatVector")) stop("shapefile must be a 'SpatVector' object.")
 
   # BD_Obs can be a data.table or a data.frame
@@ -93,56 +128,57 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, resolution, p = 2, n_round = 1) {
   # Check that the coordinate names appear in the observed data
   if (!all(BD_Coord$Cod %chin% setdiff(names(BD_Obs), "Date"))) stop("The names of the coordinates do not appear in the observed data.")
 
-  # Check if Date column is present in BD_Obs
+  ##############################################################################
+  #                          Verify if validation is to be done                #
+  ##############################################################################
+  names_col = setdiff(names(BD_Obs), "Date")
+  Ids = data.table::data.table(Cod = names_col, ID = 1:length(names_col))
+  if (training != 1 | !is.null(stat_validation)) {
+    data_val = select_data(BD_Obs, BD_Coord, training = training, seed = 123,
+                           stat_validation = stat_validation)
+    train_data = data_val$train_data
+    train_cords = data_val$train_cords
+  } else {
+    message("The training parameter was not entered. The model will be trained with all the data.")
+    train_data <- BD_Obs
+    train_cords <- BD_Coord
+  }
   ##############################################################################
   #                          Interpolation zone                                #
   ##############################################################################
-  resolution = resolution * 1000 # Convert resolution to KM
-  bbox = terra::ext(shapefile)
-  x_min = (mean(c(bbox$xmin, bbox$xmax))) - max((bbox$xmax - bbox$xmin), (bbox$ymax - bbox$ymin)) / 2
-  x_max = (mean(c(bbox$xmin, bbox$xmax))) + max((bbox$xmax - bbox$xmin), (bbox$ymax - bbox$ymin)) / 2
-  y_min = (mean(c(bbox$ymin, bbox$ymax))) - max((bbox$xmax - bbox$xmin), (bbox$ymax - bbox$ymin)) / 2
-  y_max = (mean(c(bbox$ymin, bbox$ymax))) + max((bbox$xmax - bbox$xmin), (bbox$ymax - bbox$ymin)) / 2
-
-  square_polygon <- rbind(
-    c(x_min, y_min),
-    c(x_max, y_min),
-    c(x_max, y_max),
-    c(x_min, y_max),
-    c(x_min, y_min)
-  )
-
-  square_vect <- terra::vect(square_polygon, type = "polygon", crs = terra::crs(shapefile))
-  spl_layer <- rast(
-    terra::ext(square_vect),
-    resolution = resolution,
-    crs = terra::crs(square_vect))
+  coord.ref = terra::crs(shapefile)
+  grid_resolution = grid_resolution * 1000 # Convert resolution to KM
+  spl_layer <- terra::rast(
+    terra::ext(shapefile),
+    resolution = grid_resolution,
+    crs = coord.ref)
   terra::values(spl_layer) <- 0
   ##############################################################################
   #                           Data training                                    #
   ##############################################################################
-  training_data <- melt(
-    BD_Obs,
+  IDW_data <- melt(
+    train_data,
     id.vars = "Date",
     variable.name = "Cod",
     value.name = "var"
-  )[, ID := as.numeric(factor(Cod))]
-
-  Dates_extracted <- unique(training_data[, Date])
-  Points_Train <- merge(training_data, BD_Coord, by = "Cod")
+  )
+  Ids = train_data[, .(Cod = names_col, ID = 1:length(names_col))]
+  IDW_data = Ids[IDW_data, on = "Cod"]
+  Dates_extracted <- unique(IDW_data[, Date])
+  Points_Train <- merge(IDW_data, train_cords, by = "Cod")
   setDT(Points_Train)
 
   Points_Train <- unique(Points_Train, by = "Cod")[, .(ID, Cod, X, Y, Z)]
   setorder(Points_Train, ID)
 
-  Points_VectTrain <- terra::vect(Points_Train, geom = c("X", "Y"), crs = terra::crs(spl_layer))
+  Points_VectTrain <- terra::vect(Points_Train, geom = c("X", "Y"), crs = coord.ref)
   ##############################################################################
   #                          IDW algotithm                                     #
   ##############################################################################
   data_IDW <- data.table::as.data.table(as.data.frame(spl_layer, xy = TRUE))
   data_IDW <- data_IDW[, .(X = x, Y = y)]
   coords <- as.matrix(data_IDW[, .(X, Y)])
-  distancias <- data.table::as.data.table(terra::distance(terra::vect(coords, crs = terra::crs(spl_layer)), Points_VectTrain))
+  distancias <- data.table::as.data.table(terra::distance(terra::vect(coords, crs = coord.ref), Points_VectTrain))
   setnames(distancias,  Points_VectTrain$Cod)
   data_IDW = cbind(data_IDW, distancias)
 
@@ -159,18 +195,19 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, resolution, p = 2, n_round = 1) {
         rep(NA_real_, nrow(data_IDW))
       }
     })
+
     nums_dt <- setnames(data.table::as.data.table(nums), paste0("n_", estaciones))
     result <- data_IDW[, .(X, Y)]
     result[, sum_n := rowSums(nums_dt, na.rm = TRUE)]
     result[, sum_d := rowSums(denoms_dt, na.rm = TRUE)]
     result[, value := sum_n / sum_d]
     result <- result[, .(X, Y, value)]
-    result <- rast(result, crs = terra::crs(spl_layer))
+    result <- rast(result, crs = coord.ref)
     return(result)
   }
 
   call_idw = function(day) {
-    data_obs <- training_data[Date == as.Date(day), ]
+    data_obs <- IDW_data[Date == as.Date(day), ]
     if (sum(data_obs$var, na.rm = TRUE) == 0) {
       return(spl_layer)
     } else {
@@ -183,8 +220,30 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, resolution, p = 2, n_round = 1) {
   raster_Model <- pbapply::pblapply(Dates_extracted, function(day) {
     call_idw(day)
   })
+
   Ensamble <- terra::rast(raster_Model)
   if (!is.null(n_round)) Ensamble <- terra::app(Ensamble, \(x) round(x, n_round))
   names(Ensamble) <- as.character(Dates_extracted)
-  return(Ensamble)
+
+  ##############################################################################
+  #                           Perform validation if established                #
+  ##############################################################################
+  if (training != 1 | !is.null(stat_validation)) {
+    test_cords <- data_val$test_cords
+    test_data <- data_val$test_data
+    final_results <- validate(test_cords,  test_data, crss = coord.ref,
+                              Ensamble, Rain_threshold = Rain_threshold)
+  }
+  ##############################################################################
+  #                           Save the model if necessary                      #
+  ##############################################################################
+  if (save_model) {
+    message("Model saved successfully")
+    if (is.null(name_save)) name_save = "Model_IDW"
+    name_saving <- paste0(name_save, ".nc")
+    terra::writeCDF(Ensamble, filename = name_saving, overwrite=TRUE)
+  }
+  # Return the results
+  if (training == 1) return(Ensamble)
+  if (training != 1) return(list(Ensamble = Ensamble, Validation = final_results))
 }

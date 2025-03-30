@@ -4,7 +4,19 @@
 \alias{IDW}
 \title{Inverse distance weighted interpolation (IDW)}
 \usage{
-IDW(BD_Obs, BD_Coord, shapefile, resolution, p = 2, n_round = 1)
+IDW(
+  BD_Obs,
+  BD_Coord,
+  shapefile,
+  grid_resolution,
+  p = 2,
+  n_round = NULL,
+  training = 1,
+  stat_validation = NULL,
+  Rain_threshold = NULL,
+  save_model = FALSE,
+  name_save = NULL
+)
 }
 \arguments{
 \item{BD_Obs}{A \code{data.table} or \code{data.frame} containing observational data with the following structure:
@@ -41,19 +53,37 @@ Longitude of the station in UTM format.
 \item{shapefile}{A shapefile defining the study area, used to constrain the interpolation to the region of interest.
 The shapefile must be of class \code{SpatVector} (from the \code{terra} package) and should have a UTM coordinate reference system.}
 
-\item{resolution}{A numeric value indicating the resolution of the interpolation grid in kilometers (\code{km}).}
+\item{grid_resolution}{A numeric value indicating the resolution of the interpolation grid in kilometers (\code{km}).}
 
 \item{p}{'Numeric' value that controls how the influence decreases with distance. The default value is 2}
 
 \item{n_round}{An integer specifying the number of decimal places to round the interpolated results.
 If set to \code{NULL}, all decimal places will be preserved. The default value is \code{1}.}
+
+\item{training}{Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 \% of the data will be used for training and 20 \% for validation.
+If you do not want to perform validation, set training = 1. (Default training = 1).}
+
+\item{stat_validation}{A character vector specifying the names of the stations to be used for validation.
+This option should only be filled in when it is desired to manually enter the stations used for validation. If this parameter is NULL, and the formation is different from 1, a validation will be performed using random stations.
+The vector must contain the names of the stations selected by the user for validation.
+For example, stat_validation = c(“ST001”, “ST002”). (Default stat_validation = NULL).}
+
+\item{Rain_threshold}{#List of numerical vectors defining precipitation thresholds to classify precipitation into different categories according to its intensity.
+This parameter should be entered only when the validation is to include categorical metrics such as Critical Success Index (CSI), Probability of Detection (POD), False Alarm Rate (FAR), etc.
+Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
+\strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.}
+
+\item{save_model}{Logical value indicating whether the interpolation file should be saved to disk. The default value is \code{FALSE}. indicating that the interpolated file should not be saved.}
+
+\item{name_save}{Character string indicating the name under which the interpolation raster file will be saved. By default the algorithm sets as output name: 'Model_IDW'.}
 }
 \value{
-A \code{SpatRaster} object (from the \code{terra} package) where:
+The return value will depend on whether validation has been performed or not.
+If validation is not performed, the function will return a \code{SpatRaster} object with the interpolated values.
+If validation is performed, the function will return a list with two elements:
 \itemize{
-\item Each layer (\verb{raster band}) corresponds to the interpolated values for a specific date in \code{BD_Obs$Date}.
-\item The spatial resolution is defined by the \code{resolution} parameter (in km).
-\item The coordinate reference system (CRS) matches that of the input \code{shapefile}.
+\item \code{Ensamble}: A \code{SpatRaster} object with the interpolated values.
+\item \code{Validation}: A \code{data.table} with the validation results, including goodness-of-fit metrics and categorical metrics (if \code{Rain_threshold} is provided).
 }
 }
 \description{
@@ -80,6 +110,23 @@ where:
 \item{\eqn{d(s_0, s_i)}}{ is the distance between the unknown point \eqn{s_0} and the known point \eqn{s_i}.}
 \item{\eqn{p}}{ is the power parameter that controls how the influence decreases with distance.}
 }
+The \code{Rain_threshold} parameter is used to calculate categorical metrics such as the Critical Success Index (CSI),
+Probability of Detection (POD), False Alarm Rate (FAR), success ratio (SR), Hit BIAS (HB),Heidke Skill Score (HSS);
+Hanssen-Kuipers Discriminant (HK); Equal Threat Score (ETS) or Gilbert Skill Score.
+The parameter should be entered as a named list, where each item represents a category and the name of the item is the category name.
+The elements of each category must be a numeric vector with two values: the lower and upper limits of the category.
+For example:
+#' \code{Rain_threshold = list(
+  no_rain = c(0, 1),
+  light_rain = c(1, 5),
+  moderate_rain = c(5, 20),
+  heavy_rain = c(20, 40),
+  violent_rain = c(40, Inf)
+)}
+
+Precipitation values will be classified into these categories based on their intensity.
+Users can define as many categories as necessary, or just two (e.g., "rain" vs. "no rain").
+It is important that these categories are entered according to the study region, as each study region may have its own categories.
 }
 
 \examples{
@@ -93,7 +140,9 @@ library(InterpolateR)
  shapefile <- terra::vect(system.file("extdata/study_area.shp", package = "InterpolateR"))
 
  # Perform the interpolation
- Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, resolution = 5, p = 2, n_round = 1)
+ Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
+                          n_round = 1, training = 0.8, Rain_threshold = NULL,
+                          stat_validation = NULL, save_model = FALSE, name_save = NULL)
 }
 }
 \references{
