@@ -1,13 +1,3 @@
----
-title: "A Comprehensive Toolkit for Fast and Efficient Spatial Interpolation"
-author: "Jonnathan Landi"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{InterpolateR}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
-
 # Introduction
 
 `InterpolateR` is one of the most efficient R packages for spatial interpolation. It leverages vectorized operations to maximize computational efficiency while maintaining high accuracy in interpolation tasks. The package integrates both traditional and advanced interpolation methods, making it a versatile tool for a wide range of spatial analysis applications.
