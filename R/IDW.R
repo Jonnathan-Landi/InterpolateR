@@ -42,7 +42,7 @@ utils::globalVariables(c("Cod", "ID", "Date", "var", "sum_n", "sum_d", "value", 
 #'  This option should only be filled in when it is desired to manually enter the stations used for validation. If this parameter is NULL, and the formation is different from 1, a validation will be performed using random stations.
 #'  The vector must contain the names of the stations selected by the user for validation.
 #'  For example, stat_validation = c(“ST001”, “ST002”). (Default stat_validation = NULL).
-#' @param Rain_threshold #List of numerical vectors defining precipitation thresholds to classify precipitation into different categories according to its intensity.
+#' @param Rain_threshold List of numerical vectors defining precipitation thresholds to classify precipitation into different categories according to its intensity.
 #'  This parameter should be entered only when the validation is to include categorical metrics such as Critical Success Index (CSI), Probability of Detection (POD), False Alarm Rate (FAR), etc.
 #'  Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
 #'  \strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.
@@ -60,7 +60,7 @@ utils::globalVariables(c("Cod", "ID", "Date", "var", "sum_n", "sum_d", "value", 
 #'  shapefile <- terra::vect(system.file("extdata/study_area.shp", package = "InterpolateR"))
 #'
 #'  # Perform the interpolation
-#'  Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
+#'  Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, grid_resolution = 5, p = 2,
 #'                           n_round = 1, training = 0.8, Rain_threshold = NULL,
 #'                           stat_validation = NULL, save_model = FALSE, name_save = NULL)
 #' }
@@ -134,7 +134,7 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   names_col = setdiff(names(BD_Obs), "Date")
   Ids = data.table::data.table(Cod = names_col, ID = 1:length(names_col))
   if (training != 1 | !is.null(stat_validation)) {
-    data_val = select_data(BD_Obs, BD_Coord, training = training, seed = 123,
+    data_val = .select_data(BD_Obs, BD_Coord, training = training, seed = 123,
                            stat_validation = stat_validation)
     train_data = data_val$train_data
     train_cords = data_val$train_cords
@@ -162,7 +162,7 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
     variable.name = "Cod",
     value.name = "var"
   )
-  Ids = train_data[, .(Cod = names_col, ID = 1:length(names_col))]
+  # Ids = train_data[, .(Cod = names_col, ID = 1:length(names_col))]
   IDW_data = Ids[IDW_data, on = "Cod"]
   Dates_extracted <- unique(IDW_data[, Date])
   Points_Train <- merge(IDW_data, train_cords, by = "Cod")
@@ -231,7 +231,7 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   if (training != 1 | !is.null(stat_validation)) {
     test_cords <- data_val$test_cords
     test_data <- data_val$test_data
-    final_results <- validate(test_cords,  test_data, crss = coord.ref,
+    final_results <- .validate(test_cords,  test_data, crss = coord.ref,
                               Ensamble, Rain_threshold = Rain_threshold)
   }
   ##############################################################################
@@ -244,6 +244,6 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
     terra::writeCDF(Ensamble, filename = name_saving, overwrite=TRUE)
   }
   # Return the results
-  if (training == 1) return(Ensamble)
-  if (training != 1) return(list(Ensamble = Ensamble, Validation = final_results))
+  if (training != 1 | !is.null(stat_validation)) return(list(Ensamble = Ensamble, Validation = final_results))
+  if (training == 1 & is.null(stat_validation)) return(Ensamble)
 }

@@ -1,4 +1,4 @@
-#' Merging of satellite datasets with ground observations using RFmerge
+#' Merging of satellite datasets with ground observations using Random Forest
 #'
 #' @description
 #' RFmerge is a methodology developed by Baez-Villanueva et al. (2020) for the fusion of satellite precipitation datasets with ground-based observations, with the objective of improving the accuracy and spatial representativeness of the data.
@@ -46,19 +46,55 @@
 #'   Defaults to `NULL`, meaning no spatial mask is applied.
 #' @param training Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 % of the data will be used for training and 20 % for validation.
 #' If you do not want to perform validation, set training = 1. (Default training = 1).
+#' @param stat_validation A character vector specifying the names of the stations to be used for validation.
+#'  This option should only be filled in when it is desired to manually enter the stations used for validation. If this parameter is NULL, and the formation is different from 1, a validation will be performed using random stations.
+#'  The vector must contain the names of the stations selected by the user for validation.
+#'  For example, stat_validation = c(“ST001”, “ST002”). (Default stat_validation = NULL).
 #' @param seed Integer for setting the random seed to ensure reproducibility of results (default: 123).
 #' @param ntree Numeric indicating the maximum number trees to grow in the Random Forest algorithm. The default value is set to 2000.
 #' This should not be set to too small a number, to ensure that every input row gets predicted at least a few times. If this value is too low, the prediction may be biased.
 #' @param n_round An integer specifying the number of decimal places to round the interpolated results.
 #'   If set to `NULL`, all decimal places will be preserved. The default value is `1`.
-#' @param Rain_threshold
-#' A list of numeric vectors that define the precipitation thresholds for classifying rainfall events into different categories based on intensity.
-#' Each element of the list should represent a category, with the category name as the list element's name and a numeric vector specifying the lower and upper bounds for that category.
-#' @param save_model Logical value indicating whether the corrected raster layers should be saved to disk. The default is `FALSE`.
-#'    If set to `TRUE`, make sure to set the working directory beforehand using `setwd(path)` to specify where the files should be saved.
-#' @param name_save Character string. Base name for output file (default: NULL). The output file will be saved as "Model_RFplus.nc".
-#' If you set a different name, make sure you do not set the ".nc" format,
+#' @param Rain_threshold List of numerical vectors defining precipitation thresholds to classify precipitation into different categories according to its intensity.
+#'  This parameter should be entered only when the validation is to include categorical metrics such as Critical Success Index (CSI), Probability of Detection (POD), False Alarm Rate (FAR), etc.
+#'  Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
+#'  \strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.
+#' @param save_model Logical value indicating whether the interpolation file should be saved to disk. The default value is `FALSE`. indicating that the interpolated file should not be saved.
+#     If set to `TRUE`, be sure to set the working directory beforehand using `setwd(path)` to specify where the files should be saved.
+#' @param name_save Character string indicating the name under which the interpolation raster file will be saved. By default the algorithm sets as output name: 'Model_RFmerge'.
 #' as the code will internally assign it.
+#' @references Baez-Villanueva, O. M.; Zambrano-Bigiarini, M.; Beck, H.; McNamara, I.; Ribbe, L.; Nauditt, A.; Birkel, C.; Verbist, K.; Giraldo-Osorio, J.D.; Thinh, N.X. (2020). RF-MEP: a novel Random Forest method for merging gridded precipitation products and ground-based measurements, Remote Sensing of Environment, 239, 111610. doi:10.1016/j.rse.2019.111606.
+#' @examples
+#' \donttest{
+#' library(InterpolateR)
+#' # Load data from on-site observations
+#'  data("BD_Obs", package = "InterpolateR")
+#'  data("BD_Coord", package = "InterpolateR")
+#' # Load the covariates
+#' cov <- list(
+#'  MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
+#'  CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
+#'  DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
+#'  )
+#'
+#'  # Apply the RFmerge
+#'  model_RFmerge = RFmerge(BD_Obs, BD_Coord, cov, mask = NULL, n_round = 1, ntree = 2000,
+#'                          seed = 123,  training = 0.8, stat_validation = NULL,
+#'                          Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
+#'
+#' # Visualize the results
+#'
+#' # Precipitation results within the study area
+#' modelo_rainfall = model_RFmerge$Ensamble
+#'
+#' # Validation statistic results
+#' # goodness-of-fit metrics
+#' metrics_gof = model_RFmerge$Validation$gof
+#'
+#' # categorical metrics
+#' metrics_cat = model_RFmerge$Validation$categorical_metrics
+#'
+#' }
 #' @return If a value other than 1 is set (point to pixel validation is performed), a list containing two elemeentis returned:
 #'
 #' \strong{Ensamble:}
@@ -75,8 +111,27 @@
 #'   A data frame containing categorical evaluation metrics such as Probability of Detection (POD), Success Ratio (SR), False Alarm Rate (FAR), Critical Success Index (CSI), and Hit Bias (HB). These metrics evaluate the classification performance of rainfall event predictions based on user-defined precipitation thresholds.
 #'
 #' If training is set to 1 (No validation is performed) only the Assembly mentioned above is returned.
-RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, training, seed = 123,
-                   ntree = 2000, n_round = NULL, Rain_threshold = list(no_rain = c(0, 1)),
+#' @section Details:
+#' The `Rain_threshold` parameter is used to calculate categorical metrics such as the Critical Success Index (CSI),
+#'  Probability of Detection (POD), False Alarm Rate (FAR), success ratio (SR), Hit BIAS (HB),Heidke Skill Score (HSS);
+#'   Hanssen-Kuipers Discriminant (HK); Equal Threat Score (ETS) or Gilbert Skill Score.
+#'   The parameter should be entered as a named list, where each item represents a category and the name of the item is the category name.
+#'   The elements of each category must be a numeric vector with two values: the lower and upper limits of the category.
+#'   For example:
+#' #' \code{Rain_threshold = list(
+#'   no_rain = c(0, 1),
+#'   light_rain = c(1, 5),
+#'   moderate_rain = c(5, 20),
+#'   heavy_rain = c(20, 40),
+#'   violent_rain = c(40, Inf)
+#' )}
+#'
+#' Precipitation values will be classified into these categories based on their intensity.
+#' Users can define as many categories as necessary, or just two (e.g., "rain" vs. "no rain").
+#' It is important that these categories are entered according to the study region, as each study region may have its own categories.
+#' @export
+RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2000,
+                   seed = 123,  training = 1, stat_validation = NULL, Rain_threshold = NULL,
                    save_model = FALSE, name_save = NULL) {
 
   ##############################################################################
@@ -133,123 +188,11 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, training, seed = 123,
   ##############################################################################
   #                          Verify if validation is to be done                #
   ##############################################################################
-  if (training != 1) {
-    message(paste("The training parameter has been introduced. The model will be trained with:", (training * 100), "%", "data and validated with:", (100 - (training * 100)), "%"))
-
-    # Verify if the number entered in training is valid
-    if (!(training %between% c(0, 1))) stop("The training parameter must be between 0 and 1.")
-
-    # Exclude Date column and split remaining columns
-    set.seed(seed)
-    columns <- setdiff(names(BD_Obs), "Date")
-
-    #  Randomly select the % of the training columns
-    train_columns <- sample(columns, size = floor(training * length(columns)))
-
-    # Data train
-    train_data <- BD_Obs[, .SD, .SDcols = c("Date", train_columns)]
-
-    # Data test
-    test_data <- BD_Obs[, .SD, .SDcols = setdiff(names(BD_Obs), train_columns)]
-
-    # Function used to validate data
-    evaluation_metrics <- function(data, rain_thresholds) {
-      ##############################################################################
-      #                       metrics of goodness of fit                           #
-      ##############################################################################
-      gof = data.table(
-        MAE = round(hydroGOF::mae(data$Sim, data$Obs, na.rm = T), 3),
-        CC = round(hydroGOF::rSpearman(data$Sim, data$Obs, na.rm = T), 3),
-        RMSE = round(hydroGOF::rmse(data$Sim, data$Obs, na.rm = T), 3),
-        KGE = round(hydroGOF::KGE(data$Sim, data$Obs, na.rm = T), 3),
-        NSE = round(hydroGOF::NSE(data$Sim, data$Obs, na.rm = T), 3),
-        PBIAS = round(hydroGOF::pbias(data$Sim, data$Obs, na.rm = T), 3)
-      )
-      ##############################################################################
-      #                       metrics of categorical                               #
-      ##############################################################################
-      create_threshold_categories <- function(rain_thresholds) {
-        cat_names <- names(rain_thresholds)
-        cat_min_values <- sapply(rain_thresholds, function(x) if(length(x) == 2) x[1] else x)
-
-        # Sort categories by threshold value
-        sorted_indices <- order(cat_min_values)
-        cat_names <- cat_names[sorted_indices]
-
-        # Create vectors for thresholds and categories
-        thresholds <- c(sapply(rain_thresholds[cat_names], function(x) if(length(x) == 2) x[1] else x), Inf)
-
-        return(list(thresholds = thresholds, categories = cat_names))
-      }
-
-      # Calculate performance metrics for each precipitation category
-      calculate_category_metrics <- function(dt, category) {
-        filtered_data <- dt[observed == category | estimated == category]
-
-        # Calculate metrics
-        hits <- filtered_data[observed == category & estimated == category, .N]
-        misses <- filtered_data[observed == category & estimated != category, .N]
-        false_alarms <- filtered_data[estimated == category & observed != category, .N]
-        correct_negatives <- dt[observed != category & estimated != category, .N]
-
-        # Calculate indices, handling zero denominators
-        POD <- ifelse((hits + misses) > 0, hits / (hits + misses), NA) # Probability of Detection
-        SR <- ifelse((hits + false_alarms) > 0, 1 - (false_alarms / (hits + false_alarms)), NA) # Success Ratio
-        CSI <- ifelse((hits + misses + false_alarms) > 0, hits / (hits + misses + false_alarms), NA) #Critical Success Index
-        HB <- ifelse((hits + misses) > 0, (hits + false_alarms) / (hits + misses), NA) # Hit BIAS
-        FAR <- ifelse((hits + false_alarms) > 0, false_alarms / (hits + false_alarms), NA) # False Alarm Rate
-        HK <- POD - (false_alarms / (false_alarms + correct_negatives)) # Hanssen-Kuipers Discriminant
-        HSS <- ifelse((hits + misses)*(misses + correct_negatives) +
-                        (hits + false_alarms)*(false_alarms + correct_negatives) != 0, (2 * (hits * correct_negatives - misses * false_alarms)) / (hits + misses)*(misses + correct_negatives) +
-                        (hits + false_alarms)*(false_alarms + correct_negatives), NA) # Heidke Skill Score
-        a_random <- ( (hits + false_alarms) * (hits + misses) ) /
-          (hits + misses + false_alarms + correct_negatives)
-        ETS <- ifelse(hits + misses + false_alarms - a_random != 0, hits - a_random /
-                        hits + misses + false_alarms - a_random, NA) # Equitable Threat Score
-
-        # Return results as data.table
-        return(data.table(
-          Category = category,
-          POD = POD,
-          SR = SR,
-          CSI = CSI,
-          HB = HB,
-          FAR = FAR,
-          HK = HK,
-          HSS = HSS,
-          ETS = ETS
-        ))
-      }
-
-      dt <- copy(data)
-      setkey(dt, Date)
-      threshold_info <- create_threshold_categories(rain_thresholds)
-
-      # Classify observed and estimated precipitation
-      dt[, observed := ifelse(is.na(Obs), NA_character_,
-                              as.character(cut(Obs, breaks = threshold_info$thresholds,
-                                               labels = threshold_info$categories, right = FALSE)))]
-      dt[, estimated := ifelse(is.na(Sim), NA_character_,
-                               as.character(cut(Sim, breaks = threshold_info$thresholds,
-                                                labels = threshold_info$categories, right = FALSE)))]
-
-      # Create simplified data.table with just the categories
-      category_data <- dt[, .(observed, estimated)]
-
-      # Calculate metrics for each category and combine results
-      categorical_metrics <- rbindlist(lapply(threshold_info$categories, function(cat) {
-        calculate_category_metrics(category_data, cat)
-      }))
-
-      return(list(gof = gof, categorical_metrics = categorical_metrics))
-    }
-
-    # Coordinates of the training data
-    train_cords <- BD_Coord[Cod %chin% train_columns, ]
-
-    # Coordinates of the test data
-    test_cords <- BD_Coord[Cod %chin% setdiff(names(BD_Obs), train_columns), ]
-
+  if (training != 1 | !is.null(stat_validation)) {
+    data_val = .select_data(BD_Obs, BD_Coord, training = training,
+                           seed = seed, stat_validation = stat_validation)
+    train_data = data_val$train_data
+    train_cords = data_val$train_cords
   } else {
     message("The training parameter was not entered. The model will be trained with all the data.")
     train_data <- BD_Obs
@@ -283,12 +226,6 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, training, seed = 123,
   distance_ED <- setNames(lapply(1:nrow(Points_VectTrain), function(i) {
     terra::distance(Sample_lyrs, Points_VectTrain[i, ], rasterize = FALSE)
   }), Points_VectTrain$Cod)
-
-  difference_altitude <- setNames(lapply(1:nrow(Points_VectTrain), function(i) {
-    z_station = Points_VectTrain$Z[i]
-    diff_alt = DEM[[1]] - z_station
-    return(diff_alt)
-  }), Points_VectTrain$Cod)
   ##############################################################################
   #                                 RF merge method                            #
   ##############################################################################
@@ -314,7 +251,6 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, training, seed = 123,
         }
 
         day_COV$dist_ED <- add_rasters("distance_ED", "dist_ED")
-        day_COV$diff_alt <- add_rasters("difference_altitude", "diff_alt")
 
           data_cov = lapply(day_COV, terra::extract, y = points_EstTrain) |>
             Reduce(\(x, y) merge(x, y, by = "ID", all = TRUE), x = _) |>
@@ -344,7 +280,7 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, training, seed = 123,
 
   # Run the model
   pbapply::pboptions(type = "timer", use_lb = T, style = 1, char = "=")
-  message("Analysis in progress: Stage 1 of 2. Please wait...")
+  message("Analysis in progress. Please wait...")
   raster_Model <- pbapply::pblapply(Dates_extracted, function(fecha) {
     day_COV <- lapply(cov, function(x) x[[match(fecha, Dates_extracted)]])
     RF_Modelmerge(day_COV, fecha)
@@ -356,6 +292,16 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, training, seed = 123,
   if (!is.null(mask)) {
     Ensamble <- terra::mask(Ensamble, mask)
   }
+
+  ##############################################################################
+  #                           Perform validation if established                #
+  ##############################################################################
+  if (training != 1 | !is.null(stat_validation)) {
+    test_cords = data_val$test_cords
+    test_data = data_val$test_data
+    final_results <- .validate(test_cords, test_data, crss = crs(Sample_lyrs),
+                              Ensamble, Rain_threshold = Rain_threshold)
+  }
   ##############################################################################
   #                           Save the model if necessary                      #
   ##############################################################################
@@ -365,7 +311,6 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, training, seed = 123,
     name_saving <- paste0(name_save, ".nc")
     terra::writeCDF(Ensamble, filename = name_saving, overwrite=TRUE)
   }
-  if (training == 1) return(Ensamble)
-  if (training != 1) return(list(Ensamble = Ensamble, Validation = final_results))
-
+  if (training != 1 | !is.null(stat_validation)) return(list(Ensamble = Ensamble, Validation = final_results))
+  if (training == 1 & is.null(stat_validation)) return(Ensamble)
 }
