@@ -2,52 +2,48 @@
 % Please edit documentation in R/RFplus.R
 \name{RFplus}
 \alias{RFplus}
-\alias{RFplus.default}
-\alias{RFplus.data.table}
 \title{Machine learning algorithm for fusing ground and satellite precipitation data.}
 \usage{
-RFplus(BD_Insitu, Cords_Insitu, Covariates, ...)
-
-\method{RFplus}{default}(
-  BD_Insitu,
-  Cords_Insitu,
+RFplus(
+  BD_Obs,
+  BD_Coord,
   Covariates,
   n_round = NULL,
   wet.day = FALSE,
   ntree = 2000,
   seed = 123,
   training = 1,
-  Rain_threshold = list(no_rain = c(0, 1)),
+  stat_validation = NULL,
+  Rain_threshold = NULL,
   method = c("RQUANT", "QUANT", "none"),
   ratio = 15,
   save_model = FALSE,
-  name_save = NULL,
-  ...
-)
-
-\method{RFplus}{data.table}(
-  BD_Insitu,
-  Cords_Insitu,
-  Covariates,
-  n_round = NULL,
-  wet.day = FALSE,
-  ntree = 2000,
-  seed = 123,
-  training = 1,
-  Rain_threshold = list(no_rain = c(0, 1)),
-  method = c("RQUANT", "QUANT", "none"),
-  ratio = 15,
-  save_model = FALSE,
-  name_save = NULL,
-  ...
+  name_save = NULL
 )
 }
 \arguments{
-\item{BD_Insitu}{\code{data.table} containing the ground truth measurements (dependent variable) used to train the RFplus model.
-Each column represents a ground station, and station identifiers are stored as column names. The class of \code{BD_Insitu}
-must be \code{data.table}. Each row represents a time step with measurements of the corresponding station.}
+\item{BD_Obs}{A \code{data.table} or \code{data.frame} containing observational data with the following structure:
+\itemize{
+\item The first column (\code{Date}): A \code{Date} object representing the observation date.
+\item The remaining columns: Each column corresponds to a unique ground station, where the column name is the station identifier.
+}
 
-\item{Cords_Insitu}{\code{data.table} containing metadata for the ground stations. Must include the following columns:
+The dataset should be structured as follows:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{> BD_Obs
+# A data.table or data.frame with n rows (dates) and m+1 columns (stations + Date)
+   Date        ST001  ST002  ST003  ST004  ...
+   <date>      <dbl>  <dbl>  <dbl>  <dbl>  ...
+1  2015-01-01    0      0      0      0    ...
+2  2015-01-02    0      0      0     0.2   ...
+3  2015-01-03   0.1     0      0     0.1   ...
+}\if{html}{\out{</div>}}
+\itemize{
+\item Each station column contains numeric values representing observed measurements.
+\item The column names (station identifiers) must be unique and match those in \code{BD_Coord$Cod} to ensure proper spatial referencing.
+}}
+
+\item{BD_Coord}{\code{data.table} containing metadata for the ground stations. Must include the following columns:
 \itemize{
 \item \code{"Cod"}:
 Unique identifier for each ground station.
@@ -62,8 +58,6 @@ Altitude of the station in meters.
 \item{Covariates}{A list of covariates used as independent variables in the RFplus model. Each covariate should be a
 \code{SpatRaster} object (from the \code{terra} package) and can represent satellite-derived weather variables or a Digital
 Elevation Model (DEM). All covariates should have the same number of layers (bands), except for the DEM, which must have only one layer.}
-
-\item{...}{Additional arguments to pass to the underlying methods (e.g., for model tuning or future extensions).}
 
 \item{n_round}{Numeric indicating the number of decimal places to round the corrected values. If \code{n_round} is set to \code{NULL}, no rounding is applied.}
 
@@ -80,9 +74,14 @@ Elevation Model (DEM). All covariates should have the same number of layers (ban
 \item{training}{Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 \% of the data will be used for training and 20 \% for validation.
 If you do not want to perform validation, set training = 1. (Default training = 1).}
 
-\item{Rain_threshold}{A list of numeric vectors that define the precipitation thresholds for classifying rainfall events into different categories based on intensity.
-Each element of the list should represent a category, with the category name as the list element's name and a numeric vector specifying the lower and upper bounds for that category.
+\item{stat_validation}{A character vector specifying the names of the stations to be used for validation.
+This option should only be filled in when it is desired to manually enter the stations used for validation. If this parameter is NULL, and the formation is different from 1, a validation will be performed using random stations.
+The vector must contain the names of the stations selected by the user for validation.
+For example, stat_validation = c(“ST001”, “ST002”). (Default stat_validation = NULL).}
 
+\item{Rain_threshold}{List of numerical vectors defining precipitation thresholds to classify precipitation into different categories according to its intensity.
+This parameter should be entered only when the validation is to include categorical metrics such as Critical Success Index (CSI), Probability of Detection (POD), False Alarm Rate (FAR), etc.
+Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
 \strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.}
 
 \item{method}{A character string specifying the quantile mapping method used for distribution adjustment. Options are:
@@ -97,12 +96,9 @@ No distribution adjustment is applied. Only Random Forest-based bias correction 
 
 \item{ratio}{integer Maximum search radius (in kilometers) for the quantile mapping setting using the nearest station. (default = 15 km)}
 
-\item{save_model}{Logical value indicating whether the corrected raster layers should be saved to disk. The default is \code{FALSE}.
-If set to \code{TRUE}, make sure to set the working directory beforehand using \code{setwd(path)} to specify where the files should be saved.}
+\item{save_model}{Logical value indicating whether the interpolation file should be saved to disk. The default value is \code{FALSE}. indicating that the interpolated file should not be saved.}
 
-\item{name_save}{Character string. Base name for output file (default: NULL). The output file will be saved as "Model_RFplus.nc".
-If you set a different name, make sure you do not set the ".nc" format,
-as the code will internally assign it.}
+\item{name_save}{Character string indicating the name under which the interpolation raster file will be saved. By default the algorithm sets as output name: 'Model_RFplus'.}
 }
 \value{
 A list containing two elements:
@@ -139,9 +135,13 @@ The final result combines all three steps, correcting the biases while preservin
 }
 \section{Notes}{
 
-The \code{Rain_threshold} parameter is used to classify precipitation events based on intensity into different categories. For example:
-
-\code{Rain_threshold = list(
+The \code{Rain_threshold} parameter is used to calculate categorical metrics such as the Critical Success Index (CSI),
+Probability of Detection (POD), False Alarm Rate (FAR), success ratio (SR), Hit BIAS (HB),Heidke Skill Score (HSS);
+Hanssen-Kuipers Discriminant (HK); Equal Threat Score (ETS) or Gilbert Skill Score.
+The parameter should be entered as a named list, where each item represents a category and the name of the item is the category name.
+The elements of each category must be a numeric vector with two values: the lower and upper limits of the category.
+For example:
+#' \code{Rain_threshold = list(
   no_rain = c(0, 1),
   light_rain = c(1, 5),
   moderate_rain = c(5, 20),
@@ -151,30 +151,28 @@ The \code{Rain_threshold} parameter is used to classify precipitation events bas
 
 Precipitation values will be classified into these categories based on their intensity.
 Users can define as many categories as necessary, or just two (e.g., "rain" vs. "no rain").
-
-This parameter is required only when \code{training} is not equal to 1, as it is needed to calculate performance metrics such as the Probability of Detection (POD), False Alarm Rate (FAR), and Critical Success Index (CSI).
+It is important that these categories are entered according to the study region, as each study region may have its own categories.
 }
 
 \examples{
 \donttest{
 # Load the libraries
-library(terra)
-library(data.table)
+library(InterpolateR)
 
 # Load the data
- data("BD_Insitu", package = "RFplus")
- data("Cords_Insitu", package = "RFplus")
+ data("BD_Obs", package = "InterpolateR")
+ data("BD_Coord", package = "InterpolateR")
 
 # Load the covariates
 Covariates <- list(
- MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "RFplus")),
- CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "RFplus")),
- DEM = terra::rast(system.file("extdata/DEM.nc", package = "RFplus"))
+ MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
+ CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
+ DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
  )
 
  # Apply the RFplus bias correction model
-model = RFplus(BD_Insitu, Cords_Insitu, Covariates, n_round = 1, wet.day = 0.1,
-        ntree = 2000, seed = 123, training = 1,
+model = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
+        ntree = 2000, seed = 123, training = 0.8,
         Rain_threshold = list(no_rain = c(0, 1), light_rain = c(1, 5)),
         method = "RQUANT", ratio = 10, save_model = FALSE, name_save = NULL)
 # Visualize the results

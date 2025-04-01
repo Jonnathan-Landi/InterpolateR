@@ -2,18 +2,19 @@
 % Please edit documentation in R/RFmerge.R
 \name{RFmerge}
 \alias{RFmerge}
-\title{Merging of satellite datasets with ground observations using RFmerge}
+\title{Merging of satellite datasets with ground observations using Random Forest}
 \usage{
 RFmerge(
   BD_Obs,
   BD_Coord,
   cov,
   mask = NULL,
-  training,
-  seed = 123,
-  ntree = 2000,
   n_round = NULL,
-  Rain_threshold = list(no_rain = c(0, 1)),
+  ntree = 2000,
+  seed = 123,
+  training = 1,
+  stat_validation = NULL,
+  Rain_threshold = NULL,
   save_model = FALSE,
   name_save = NULL
 )
@@ -61,25 +62,30 @@ If provided, the shapefile must be of class \code{SpatVector} (from the \code{te
 When specified, a spatial mask is applied to ensure that the final precipitation estimates are restricted to the defined study area.
 Defaults to \code{NULL}, meaning no spatial mask is applied.}
 
-\item{training}{Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 \% of the data will be used for training and 20 \% for validation.
-If you do not want to perform validation, set training = 1. (Default training = 1).}
-
-\item{seed}{Integer for setting the random seed to ensure reproducibility of results (default: 123).}
+\item{n_round}{An integer specifying the number of decimal places to round the interpolated results.
+If set to \code{NULL}, all decimal places will be preserved. The default value is \code{1}.}
 
 \item{ntree}{Numeric indicating the maximum number trees to grow in the Random Forest algorithm. The default value is set to 2000.
 This should not be set to too small a number, to ensure that every input row gets predicted at least a few times. If this value is too low, the prediction may be biased.}
 
-\item{n_round}{An integer specifying the number of decimal places to round the interpolated results.
-If set to \code{NULL}, all decimal places will be preserved. The default value is \code{1}.}
+\item{seed}{Integer for setting the random seed to ensure reproducibility of results (default: 123).}
 
-\item{Rain_threshold}{A list of numeric vectors that define the precipitation thresholds for classifying rainfall events into different categories based on intensity.
-Each element of the list should represent a category, with the category name as the list element's name and a numeric vector specifying the lower and upper bounds for that category.}
+\item{training}{Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 \% of the data will be used for training and 20 \% for validation.
+If you do not want to perform validation, set training = 1. (Default training = 1).}
 
-\item{save_model}{Logical value indicating whether the corrected raster layers should be saved to disk. The default is \code{FALSE}.
-If set to \code{TRUE}, make sure to set the working directory beforehand using \code{setwd(path)} to specify where the files should be saved.}
+\item{stat_validation}{A character vector specifying the names of the stations to be used for validation.
+This option should only be filled in when it is desired to manually enter the stations used for validation. If this parameter is NULL, and the formation is different from 1, a validation will be performed using random stations.
+The vector must contain the names of the stations selected by the user for validation.
+For example, stat_validation = c(“ST001”, “ST002”). (Default stat_validation = NULL).}
 
-\item{name_save}{Character string. Base name for output file (default: NULL). The output file will be saved as "Model_RFplus.nc".
-If you set a different name, make sure you do not set the ".nc" format,
+\item{Rain_threshold}{List of numerical vectors defining precipitation thresholds to classify precipitation into different categories according to its intensity.
+This parameter should be entered only when the validation is to include categorical metrics such as Critical Success Index (CSI), Probability of Detection (POD), False Alarm Rate (FAR), etc.
+Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
+\strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.}
+
+\item{save_model}{Logical value indicating whether the interpolation file should be saved to disk. The default value is \code{FALSE}. indicating that the interpolated file should not be saved.}
+
+\item{name_save}{Character string indicating the name under which the interpolation raster file will be saved. By default the algorithm sets as output name: 'Model_RFmerge'.
 as the code will internally assign it.}
 }
 \value{
@@ -105,4 +111,60 @@ RFmerge is a methodology developed by Baez-Villanueva et al. (2020) for the fusi
 This package implements RFmerge using Random Forest as a machine learning technique to correct biases and adjust the distribution of satellite products to in situ measurements.
 In addition, it allows the integration of multiple sources of information, including geographic and environmental variables, optimizing the interpolation and spatial extrapolation of precipitation in data-limited regions.
 Unlike previous implementations, this package has been optimized to improve computational efficiency and reduce processing times by incorporating advanced data manipulation techniques with \code{data.table}.
+}
+\section{Details}{
+
+The \code{Rain_threshold} parameter is used to calculate categorical metrics such as the Critical Success Index (CSI),
+Probability of Detection (POD), False Alarm Rate (FAR), success ratio (SR), Hit BIAS (HB),Heidke Skill Score (HSS);
+Hanssen-Kuipers Discriminant (HK); Equal Threat Score (ETS) or Gilbert Skill Score.
+The parameter should be entered as a named list, where each item represents a category and the name of the item is the category name.
+The elements of each category must be a numeric vector with two values: the lower and upper limits of the category.
+For example:
+#' \code{Rain_threshold = list(
+  no_rain = c(0, 1),
+  light_rain = c(1, 5),
+  moderate_rain = c(5, 20),
+  heavy_rain = c(20, 40),
+  violent_rain = c(40, Inf)
+)}
+
+Precipitation values will be classified into these categories based on their intensity.
+Users can define as many categories as necessary, or just two (e.g., "rain" vs. "no rain").
+It is important that these categories are entered according to the study region, as each study region may have its own categories.
+}
+
+\examples{
+\donttest{
+library(InterpolateR)
+# Load data from on-site observations
+ data("BD_Obs", package = "InterpolateR")
+ data("BD_Coord", package = "InterpolateR")
+# Load the covariates
+cov <- list(
+ MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
+ CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
+ DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
+ )
+
+ # Apply the RFmerge
+ model_RFmerge = RFmerge(BD_Obs, BD_Coord, cov, mask = NULL, n_round = 1, ntree = 2000,
+                         seed = 123,  training = 0.8, stat_validation = NULL,
+                         Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
+
+# Visualize the results
+
+# Precipitation results within the study area
+modelo_rainfall = model_RFmerge$Ensamble
+
+# Validation statistic results
+# goodness-of-fit metrics
+metrics_gof = model_RFmerge$Validation$gof
+
+# categorical metrics
+metrics_cat = model_RFmerge$Validation$categorical_metrics
+
+}
+}
+\references{
+Baez-Villanueva, O. M.; Zambrano-Bigiarini, M.; Beck, H.; McNamara, I.; Ribbe, L.; Nauditt, A.; Birkel, C.; Verbist, K.; Giraldo-Osorio, J.D.; Thinh, N.X. (2020). RF-MEP: a novel Random Forest method for merging gridded precipitation products and ground-based measurements, Remote Sensing of Environment, 239, 111610. doi:10.1016/j.rse.2019.111606.
 }

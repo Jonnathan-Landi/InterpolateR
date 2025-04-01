@@ -4,7 +4,17 @@
 \alias{Cressman}
 \title{Cressman Objective Analysis Method}
 \usage{
-Cressman(BD_Obs, BD_Coord, shapefile, resolution, radius, n_round = 1)
+Cressman(
+  BD_Obs,
+  BD_Coord,
+  shapefile,
+  grid_resolution,
+  search_radius,
+  training = 1,
+  stat_validation = NULL,
+  Rain_threshold = NULL,
+  save_model = FALSE
+)
 }
 \arguments{
 \item{BD_Obs}{A \code{data.table} or \code{data.frame} containing observational data with the following structure:
@@ -29,9 +39,9 @@ The dataset should be structured as follows:
 }}
 
 \item{BD_Coord}{A \code{data.table} or \code{data.frame} containing the metadata of the ground stations. It must include the following columns:
-#' - \code{"Cod"}:
-Unique identifier for each ground station.
 \itemize{
+\item \code{"Cod"}:
+Unique identifier for each ground station.
 \item \code{"X"}:
 Latitude of the station in UTM format.
 \item \code{"Y"}:
@@ -41,45 +51,95 @@ Longitude of the station in UTM format.
 \item{shapefile}{A shapefile defining the study area, used to constrain the interpolation to the region of interest.
 The shapefile must be of class \code{SpatVector} (from the \code{terra} package) and should have a UTM coordinate reference system.}
 
-\item{resolution}{A numeric value indicating the resolution of the interpolation grid in kilometers (\code{km}).}
+\item{grid_resolution}{A numeric value indicating the resolution of the interpolation grid in kilometers (\code{km}).}
 
-\item{n_round}{An integer specifying the number of decimal places to round the interpolated results.
-If set to \code{NULL}, all decimal places will be preserved. The default value is \code{1}.}
+\item{search_radius}{A numeric vector indicating the search radius in kilometers (\code{km}) for the Cressman method.
+\strong{Note:} See the "Notes" section for additional details on how to search radius values.}
 
-\item{p}{'Numeric' value that controls how the influence decreases with distance. The default value is 2}
+\item{training}{Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 \% of the data will be used for training and 20 \% for validation.
+If you do not want to perform validation, set training = 1. (Default training = 1).}
+
+\item{stat_validation}{A character vector specifying the names of the stations to be used for validation.
+This option should only be filled in when it is desired to manually enter the stations used for validation. If this parameter is NULL, and the formation is different from 1, a validation will be performed using random stations.
+The vector must contain the names of the stations selected by the user for validation.
+For example, stat_validation = c(“ST001”, “ST002”). (Default stat_validation = NULL).}
+
+\item{Rain_threshold}{List of numerical vectors defining precipitation thresholds to classify precipitation into different categories according to its intensity.
+This parameter should be entered only when the validation is to include categorical metrics such as Critical Success Index (CSI), Probability of Detection (POD), False Alarm Rate (FAR), etc.
+Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
+\strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.}
+
+\item{save_model}{Logical value indicating whether the interpolation file should be saved to disk. The default value is \code{FALSE}. indicating that the interpolated file should not be saved.}
 }
 \value{
-A \code{SpatRaster} object (from the \code{terra} package) where:
+The return value depends on whether validation has been performed.
 \itemize{
-\item Each layer (\verb{raster band}) corresponds to the interpolated values for a specific date in \code{BD_Obs$Date}.
-\item The spatial resolution is defined by the \code{resolution} parameter (in km).
-\item The coordinate reference system (CRS) matches that of the input \code{shapefile}.
+\item \strong{Without validation:} The function returns a \code{list}, where each element is a \code{SpatRaster} object containing the interpolated values for a specific search radius defined in \code{search_radius}. The number of elements in this list matches the length of \code{search_radius}.
+\item \strong{With validation:} The function returns a named \code{list} with two elements:
+\itemize{
+\item \strong{\code{Ensamble}}: A \code{list} where each element corresponds to a \code{SpatRaster} object containing the interpolated values for a specific search radius in \code{search_radius}.
+\item \strong{\code{Validation}}: A \code{list} where each element is a \code{data.table} containing the validation results for the corresponding interpolated \code{SpatRaster}. Each \code{data.table} incluye métricas de bondad de ajuste como RMSE, MAE y Kling-Gupta Efficiency (KGE), junto con métricas categóricas si se proporciona \code{Rain_threshold}.
 }
+}
+
+The number of elements in both the \code{Ensamble} and \code{Validation} lists matches the length of \code{search_radius}, ensuring that each interpolation result has an associated validation dataset.
 }
 \description{
-This function performs Inverse Distance Weighting (IDW), which is a spatial interpolation method that estimates unknown values using the known values of surrounding points, assigning greater influence to closer points.
+The Cressman objective analysis computes values at grid points \eqn{Z_{ij}^a} (where \eqn{i} and \eqn{j} are the grid point indices for a 2D grid)
+as the weighted average of the difference between observed values \eqn{Z_k^o} and background values interpolated to the
+observation locations \eqn{Z_k^b} (i.e., \eqn{Z_k^o - Z_k^b}, called the observation increment) plus the background value
+at the grid point \eqn{Z_{ij}^b}.
+}
+\note{
+The \code{search_radius} parameter defines the influence range for the Cressman interpolation method.
+It determines the maximum distance (in kilometers) within which observational data points contribute
+to the interpolated value at a given location. A larger radius results in smoother interpolated fields
+but may oversmooth local variations, while a smaller radius preserves finer details but may introduce noise.
+
+The Cressman method typically applies an iterative approach, where the search radius is progressively reduced
+to refine the interpolation. Each iteration recalculates interpolated values with a smaller radius,
+allowing a better representation of small-scale features in the dataset.
+
+The \code{search_radius} should be defined as a numeric vector representing the influence range in kilometers (\code{km})
+for each interpolation iteration. For example, setting \code{search_radius = c(50, 20, 10)} means the first iteration
+considers a 50 km influence radius, the second iteration uses 20 km, and the final iteration refines
+the interpolation with a 10 km radius. The number of elements in \code{search_radius} determines the total number of iterations.
+
+The \code{Rain_threshold} parameter is used to calculate categorical metrics such as the Critical Success Index (CSI),
+Probability of Detection (POD), False Alarm Rate (FAR), success ratio (SR), Hit BIAS (HB),Heidke Skill Score (HSS);
+Hanssen-Kuipers Discriminant (HK); Equal Threat Score (ETS) or Gilbert Skill Score.
+The parameter should be entered as a named list, where each item represents a category and the name of the item is the category name.
+The elements of each category must be a numeric vector with two values: the lower and upper limits of the category.
+For example:
+#' \code{Rain_threshold = list(
+  no_rain = c(0, 1),
+  light_rain = c(1, 5),
+  moderate_rain = c(5, 20),
+  heavy_rain = c(20, 40),
+  violent_rain = c(40, Inf)
+)}
+
+Precipitation values will be classified into these categories based on their intensity.
+Users can define as many categories as necessary, or just two (e.g., "rain" vs. "no rain").
+It is important that these categories are entered according to the study region, as each study region may have its own categories.
 }
 \section{Details}{
 
-Inverse distance weighting (IDW) works as a deterministic mathematical interpolator that assumes
-that values closer to an unknown point are more closely related to it than those farther away. When using this method, sample points are weighted during the interpolation process so that the influence of a known point on the unknown point decreases as the distance between them increases.
-The IDW method calculates the value at an unknown point by a weighted average of the values of the known points, where the weights are inversely proportional to the distances between the prediction point and the known points. The basic formula defined by Shepard states that:
-\deqn{\hat{Z}(s_0) = \frac{\sum_{i=1}^{N} w_i Z(s_i)}{\sum_{i=1}^{N} w_i}}
+The Cressman method is defined by the following equation:
+\deqn{Z_{ij}^a = Z_{ij}^b + \frac{\sum_{k=1}^{n} w_k (Z_k^o - Z_k^b)}{\sum_{k=1}^{n} w_k}}
 where:
 \describe{
-\item{\eqn{\hat{Z}(s_0)}}{ is the estimated value at the unknown point.}
-\item{\eqn{Z(s_i)}}{ are the known values.}
-\item{\eqn{w_i}}{ are the weights assigned to each known point.}
-\item{\eqn{N}}{ is the total number of known points used.}
+\item{\eqn{Z_{ij}^a}}{is the analysis value at grid point \eqn{i,j}.}
+\item{\eqn{Z_{ij}^b}}{is the background value at grid point \eqn{i,j}.}
+\item{\eqn{Z_k^o}}{is the observed value at station \eqn{k}.}
+\item{\eqn{Z_k^b}}{is the background value interpolated to station \eqn{k}.}
+\item{\eqn{w_k}}{is the weight assigned to station \eqn{k}.}
+\item{\eqn{n}}{is the total number of stations used.}
 }
-
-The weights are calculated by:
-\deqn{w_i = \frac{1}{d(s_0, s_i)^p}}
-where:
-\describe{
-\item{\eqn{d(s_0, s_i)}}{ is the distance between the unknown point \eqn{s_0} and the known point \eqn{s_i}.}
-\item{\eqn{p}}{ is the power parameter that controls how the influence decreases with distance.}
-}
+The weight \eqn{w_k} is a function of the distance \eqn{r = \sqrt{(x_{ij} - x_k)^2 + (y_{ij} - y_k)^2}}
+between the individual observation \eqn{k} and grid point \eqn{(i, j)}. \eqn{R} is the influence radius.
+Beyond the influence radius, the weight is set to zero. \eqn{R} is therefore often referred to as
+the cut-off radius.
 }
 
 \examples{
@@ -93,11 +153,23 @@ library(InterpolateR)
  shapefile <- terra::vect(system.file("extdata/study_area.shp", package = "InterpolateR"))
 
  # Perform the interpolation
- Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, resolution = 5, p = 2, n_round = 1)
+ Interpolated_Cressman <- Cressman(BD_Obs, BD_Coord, shapefile, grid_resolution = 5,
+                                   search_radius = c(20,10), training = 1,
+                                   stat_validation = "M001", Rain_threshold = NULL,
+                                   save_model = FALSE)
+# Results
+Radius_20 = Interpolated_Cressman$Ensamble[[1]] # Interpolated data with a 20 km radius
+Radius_10 = Interpolated_Cressman$Ensamble[[2]] # Interpolated data with a 10 km radius
+
+# Validation statistics
+# Validation results with a 20 km radius
+Validation_results_20 = Interpolated_Cressman$Validation[[1]]
+# Validation results with a 10 km radius
+Validation_results_10 = Interpolated_Cressman$Validation[[2]]
 }
 }
 \references{
-Shepard, D. (1968) A two-dimensional interpolation function for irregularly-spaced data. Proceedings of the 1968 ACM National Conference, 1968, pages 517--524. DOI: 10.1145/800186.810616
+Cressman, G. P., 1959: An operational objective analysis system. Mon. Wea. Rev., 87, 367-374, doi:10.1175/1520-0493(1959)087\%3C0367:AOOAS\%3E2.0.CO;2.
 }
 \author{
 Jonnathan Landi \href{mailto:jonnathan.landi@outlook.com}{jonnathan.landi@outlook.com}

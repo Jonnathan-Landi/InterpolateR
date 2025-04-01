@@ -68,7 +68,7 @@ This option should only be filled in when it is desired to manually enter the st
 The vector must contain the names of the stations selected by the user for validation.
 For example, stat_validation = c(“ST001”, “ST002”). (Default stat_validation = NULL).}
 
-\item{Rain_threshold}{#List of numerical vectors defining precipitation thresholds to classify precipitation into different categories according to its intensity.
+\item{Rain_threshold}{List of numerical vectors defining precipitation thresholds to classify precipitation into different categories according to its intensity.
 This parameter should be entered only when the validation is to include categorical metrics such as Critical Success Index (CSI), Probability of Detection (POD), False Alarm Rate (FAR), etc.
 Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
 \strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.}
@@ -140,7 +140,7 @@ library(InterpolateR)
  shapefile <- terra::vect(system.file("extdata/study_area.shp", package = "InterpolateR"))
 
  # Perform the interpolation
- Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
+ Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, grid_resolution = 5, p = 2,
                           n_round = 1, training = 0.8, Rain_threshold = NULL,
                           stat_validation = NULL, save_model = FALSE, name_save = NULL)
 }
