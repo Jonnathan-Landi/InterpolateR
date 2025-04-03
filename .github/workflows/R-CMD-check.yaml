@@ -50,5 +50,3 @@ jobs:
           build_args: c('--compact-vignettes=gs+qpdf')
           warnings_are_errors: true  # Falla si hay warnings
           error_on: "note"  # Falla si hay notas
-
-touch .github/workflows/test-coverage.yml
