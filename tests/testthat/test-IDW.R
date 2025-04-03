@@ -31,8 +31,8 @@ test_that("IDW interpolation works correctly", {
                            stat_validation = NULL, save_model = FALSE, name_save = NULL)
 
   # Check that the result is a raster object
-  expect_true(inherits(Interpolated_SN$Ensamble, "SpatRaster"))
-  expect_equal(terra::nlyr(Interpolated_SN$Ensamble), length(unique(BD_Obs$Date)))
+  expect_true(inherits(Interpolated_SN, "SpatRaster"))
+  expect_equal(terra::nlyr(Interpolated_SN), length(unique(BD_Obs$Date)))
   ##################################################################################################
   # Testing without Rain
   Interpolated_SnRain <- IDW(BD_Obs, BD_Coord, shapefile, grid_resolution = 5, p = 2,

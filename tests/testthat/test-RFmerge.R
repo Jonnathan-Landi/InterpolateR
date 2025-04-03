@@ -38,15 +38,17 @@ test_that("RFmerge works correctly", {
   model_Sn = RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
                           seed = 123,  training = 1, stat_validation = NULL, Rain_threshold = NULL,
                           save_model = FALSE, name_save = NULL)
+
   # Check that the result is a raster object
-  expect_true(inherits(model_Sn$Ensamble, "SpatRaster"))
-  expect_equal(terra::nlyr(model_Sn$Ensamble), length(unique(BD_Obs$Date)))
+  expect_true(inherits(model_Sn, "SpatRaster"))
+  expect_equal(terra::nlyr(model_Sn), length(unique(BD_Obs$Date)))
 
   ##################################################################################################
   # Random tesging
   model_Random = RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
                           seed = 123,  training = 0.8, stat_validation = NULL, Rain_threshold = Rain_threshold,
                           save_model = FALSE, name_save = NULL)
+
   # Check that the result is a raster object
   expect_true(inherits(model_Random$Ensamble, "SpatRaster"))
   expect_equal(terra::nlyr(model_Random$Ensamble), length(unique(BD_Obs$Date)))

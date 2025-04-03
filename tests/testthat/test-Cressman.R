@@ -47,8 +47,8 @@ test_that("Cressman Objective Analysis Method works correctly", {
     save_model = FALSE
   )
   # Results
-  Radius_20_SN = Interpolation_SN$Ensamble[[1]] # Interpolated data with a 20 km radius
-  Radius_10_SN = Interpolation_SN$Ensamble[[2]] # Interpolated data with a 10 km radius
+  Radius_20_SN = Interpolation_SN[[1]] # Interpolated data with a 20 km radius
+  Radius_10_SN = Interpolation_SN[[2]] # Interpolated data with a 10 km radius
 
   # Check that the result is a raster object
   expect_true(inherits(Radius_20_SN, "SpatRaster"))

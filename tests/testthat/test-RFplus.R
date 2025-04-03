@@ -38,7 +38,6 @@ test_that("RFplus works correctly", {
                  ntree = 2000, seed = 123, training = 1, stat_validation = c("M004"),
                  Rain_threshold = Rain_threshold, method = "QUANT",
                  ratio = 15, save_model = FALSE, name_save = NULL)
-
   ##################################################################################################
   # Check that the result is a raster object
   expect_true(inherits(model_none$Ensamble, "SpatRaster"))
@@ -57,8 +56,8 @@ test_that("RFplus works correctly", {
                  ratio = 15, save_model = FALSE, name_save = NULL)
 
   # Check that the result is a raster object
-  expect_true(inherits(model_sn$Ensamble, "SpatRaster"))
+  expect_true(inherits(model_sn, "SpatRaster"))
   # Check that the number of layers in the raster object is equal to the number of unique dates
-  expect_equal(terra::nlyr(model_sn$Ensamble), length(unique(BD_Obs$Date)))
+  expect_equal(terra::nlyr(model_sn), length(unique(BD_Obs$Date)))
 })
 
