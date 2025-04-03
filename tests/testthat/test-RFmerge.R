@@ -11,11 +11,22 @@ test_that("RFmerge works correctly", {
     DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
   )
 
-  # Apply the RFmerge
-  model_RFmerge = RFmerge(BD_Obs, BD_Coord, cov, mask = NULL, n_round = 1, ntree = 2000,
-                          seed = 123,  training = 1, stat_validation = c("M006"), Rain_threshold = NULL,
-                          save_model = FALSE, name_save = NULL)
+  # load mask
+  shapefile <- terra::vect(system.file("extdata/study_area.shp", package = "InterpolateR"))
 
+  # validation with Rain
+  Rain_threshold = list(
+    no_rain = c(0, 1),
+    light_rain = c(1, 5),
+    moderate_rain = c(5, 20),
+    heavy_rain = c(20, 40),
+    extremely_rain= c(40, Inf)
+  )
+
+  # Apply the RFmerge
+  model_RFmerge = RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
+                          seed = 123,  training = 1, stat_validation = c("M006"), Rain_threshold = Rain_threshold,
+                          save_model = FALSE, name_save = NULL)
 
   # Check that the result is a raster object
   expect_true(inherits(model_RFmerge$Ensamble, "SpatRaster"))

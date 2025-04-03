@@ -7,11 +7,20 @@ test_that("Cressman Objective Analysis Method works correctly", {
   # Load the study area where the interpolation will be performed.
   shapefile = terra::vect(system.file("extdata/study_area.shp", package = "InterpolateR"))
 
+  # validation with Rain
+  Rain_threshold = list(
+    no_rain = c(0, 1),
+    light_rain = c(1, 5),
+    moderate_rain = c(5, 20),
+    heavy_rain = c(20, 40),
+    extremely_rain= c(40, Inf)
+  )
+
   # Performing interpolation using the Cressman method
   Interpolated_Cressman = Cressman(
     BD_Obs, BD_Coord, shapefile, grid_resolution = 5,
     search_radius = c(20, 10), training = 1,
-    stat_validation = "M001", Rain_threshold = NULL,
+    stat_validation = "M001", Rain_threshold = Rain_threshold,
     save_model = FALSE
   )
 
