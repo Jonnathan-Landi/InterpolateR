@@ -25,7 +25,7 @@ test_that("RFmerge works correctly", {
 
   # Apply the RFmerge
   model_RFmerge = RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
-                          seed = 123,  training = 1, stat_validation = c("M006"), Rain_threshold = Rain_threshold,
+                          seed = 123,  training = 1, stat_validation = c("M004"), Rain_threshold = Rain_threshold,
                           save_model = FALSE, name_save = NULL)
 
   # Check that the result is a raster object

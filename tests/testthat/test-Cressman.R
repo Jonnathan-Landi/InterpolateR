@@ -43,7 +43,7 @@ test_that("Cressman Objective Analysis Method works correctly", {
   fail_shape = Cressman(
     BD_Obs, BD_Coord, invalid_shapefile, grid_resolution = 5,
     search_radius = c(20, 10), training = 1,
-    stat_validation = "M001", Rain_threshold = Rain_threshold,
+    stat_validation = "M004", Rain_threshold = Rain_threshold,
     save_model = FALSE
   )
   expect_true(inherits(fail_shape, "try-error"))

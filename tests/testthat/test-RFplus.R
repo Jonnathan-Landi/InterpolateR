@@ -22,19 +22,19 @@ test_that("RFplus works correctly", {
 
   # Apply the RFplus with method = "none"
   model_none = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
-                 ntree = 2000, seed = 123, training = 1, stat_validation = c("M006"),
+                 ntree = 2000, seed = 123, training = 1, stat_validation = c("M004"),
                  Rain_threshold = Rain_threshold, method = "none",
                  ratio = 15, save_model = FALSE, name_save = NULL)
 
   # Apply the method RQUANT
   model_Rquant = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
-                 ntree = 2000, seed = 123, training = 1, stat_validation = c("M006"),
+                 ntree = 2000, seed = 123, training = 1, stat_validation = c("M004"),
                  Rain_threshold = Rain_threshold, method = "RQUANT",
                  ratio = 15, save_model = FALSE, name_save = NULL)
 
   # Apply the method QUANT
   model_QUANT = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
-                 ntree = 2000, seed = 123, training = 1, stat_validation = c("M006"),
+                 ntree = 2000, seed = 123, training = 1, stat_validation = c("M004"),
                  Rain_threshold = Rain_threshold, method = "QUANT",
                  ratio = 15, save_model = FALSE, name_save = NULL)
 

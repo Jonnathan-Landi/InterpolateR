@@ -17,8 +17,8 @@ test_that("IDW interpolation works correctly", {
 
   # Performing interpolation using the IDW method
   Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, grid_resolution = 5, p = 2,
-                           n_round = 1, training = 0.8, Rain_threshold = Rain_threshold,
-                           stat_validation = NULL, save_model = FALSE, name_save = NULL)
+                           n_round = 1, training = 1, Rain_threshold = Rain_threshold,
+                           stat_validation = "M004", save_model = FALSE, name_save = NULL)
 
   # Check that the result is a raster object
   expect_true(inherits(Interpolated_data$Ensamble, "SpatRaster"))
