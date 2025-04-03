@@ -15,7 +15,8 @@ test_that("Cressman Objective Analysis Method works correctly", {
     heavy_rain = c(20, 40),
     extremely_rain= c(40, Inf)
   )
-
+  ##################################################################################################
+  # Testing with validation
   # Performing interpolation using the Cressman method
   Interpolated_Cressman = Cressman(
     BD_Obs, BD_Coord, shapefile, grid_resolution = 5,
@@ -38,4 +39,20 @@ test_that("Cressman Objective Analysis Method works correctly", {
   expect_equal(terra::nlyr(Radius_20), length(unique(BD_Obs$Date)))
   expect_equal(terra::nlyr(Radius_10), length(unique(BD_Obs$Date)))
   ##################################################################################################
+  # Testing without validation
+  Interpolation_SN = Cressman(
+    BD_Obs, BD_Coord, shapefile, grid_resolution = 5,
+    search_radius = c(20, 10), training = 1,
+    stat_validation = NULL, Rain_threshold = NULL,
+    save_model = FALSE
+  )
+  # Results
+  Radius_20_SN = Interpolation_SN$Ensamble[[1]] # Interpolated data with a 20 km radius
+  Radius_10_SN = Interpolation_SN$Ensamble[[2]] # Interpolated data with a 10 km radius
+
+  # Check that the result is a raster object
+  expect_true(inherits(Radius_20_SN, "SpatRaster"))
+  expect_true(inherits(Radius_10_SN, "SpatRaster"))
+  expect_equal(terra::nlyr(Radius_20_SN), length(unique(BD_Obs$Date)))
+  expect_equal(terra::nlyr(Radius_10_SN), length(unique(BD_Obs$Date)))
 })

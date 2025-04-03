@@ -14,7 +14,8 @@ test_that("IDW interpolation works correctly", {
     heavy_rain = c(20, 40),
     extremely_rain= c(40, Inf)
   )
-
+  ##################################################################################################
+  # Testing with validation
   # Performing interpolation using the IDW method
   Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile, grid_resolution = 5, p = 2,
                            n_round = 1, training = 1, Rain_threshold = Rain_threshold,
@@ -23,4 +24,22 @@ test_that("IDW interpolation works correctly", {
   # Check that the result is a raster object
   expect_true(inherits(Interpolated_data$Ensamble, "SpatRaster"))
   expect_equal(terra::nlyr(Interpolated_data$Ensamble), length(unique(BD_Obs$Date)))
+  ##################################################################################################
+  # Testing without validation
+  Interpolated_SN = IDW(BD_Obs, BD_Coord, shapefile, grid_resolution = 5, p = 2,
+                           n_round = 1, training = 1, Rain_threshold = NULL,
+                           stat_validation = NULL, save_model = FALSE, name_save = NULL)
+
+  # Check that the result is a raster object
+  expect_true(inherits(Interpolated_SN$Ensamble, "SpatRaster"))
+  expect_equal(terra::nlyr(Interpolated_SN$Ensamble), length(unique(BD_Obs$Date)))
+  ##################################################################################################
+  # Testing without Rain
+  Interpolated_SnRain <- IDW(BD_Obs, BD_Coord, shapefile, grid_resolution = 5, p = 2,
+                           n_round = 1, training = 1, Rain_threshold = NULL,
+                           stat_validation = "M004", save_model = FALSE, name_save = NULL)
+  # Check that the result is a raster object
+  expect_true(inherits(Interpolated_SnRain$Ensamble, "SpatRaster"))
+  expect_equal(terra::nlyr(Interpolated_SnRain$Ensamble), length(unique(BD_Obs$Date)))
+  ##################################################################################################
 })

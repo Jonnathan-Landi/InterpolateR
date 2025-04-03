@@ -19,7 +19,8 @@ test_that("RFplus works correctly", {
     heavy_rain = c(20, 40),
     extremely_rain= c(40, Inf)
   )
-
+  ##################################################################################################
+  # Testing with validation
   # Apply the RFplus with method = "none"
   model_none = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
                  ntree = 2000, seed = 123, training = 1, stat_validation = c("M004"),
@@ -48,5 +49,16 @@ test_that("RFplus works correctly", {
   expect_equal(terra::nlyr(model_none$Ensamble), length(unique(BD_Obs$Date)))
   expect_equal(terra::nlyr(model_Rquant$Ensamble), length(unique(BD_Obs$Date)))
   expect_equal(terra::nlyr(model_QUANT$Ensamble), length(unique(BD_Obs$Date)))
+  ##################################################################################################
+  # Testing without validation
+  model_sn = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
+                 ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
+                 Rain_threshold = NULL, method = "none",
+                 ratio = 15, save_model = FALSE, name_save = NULL)
+
+  # Check that the result is a raster object
+  expect_true(inherits(model_sn$Ensamble, "SpatRaster"))
+  # Check that the number of layers in the raster object is equal to the number of unique dates
+  expect_equal(terra::nlyr(model_sn$Ensamble), length(unique(BD_Obs$Date)))
 })
 
