@@ -1,5 +1,10 @@
 # **InterpolateR:** *A Comprehensive Toolkit for Fast and Efficient Spatial Interpolation*
 
+<!-- CRAN:Check -->
+
+[![R-CMD-check](https://github.com/Jonnathan-Landi/InterpolateR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Jonnathan-Landi/InterpolateR/actions/workflows/R-CMD-check.yaml) [![CRAN status](https://www.r-pkg.org/badges/version/InterpolateR)](https://cran.r-project.org/package=InterpolateR) [![CRAN RStudio mirror downloads](https://cranlogs.r-pkg.org/badges/InterpolateR)](https://www.r-pkg.org/pkg/InterpolateR)
+[![Codecov test coverage](https://codecov.io/gh/Jonnathan-Landi/InterpolateR/branch/main/graph/badge.svg)](https://app.codecov.io/gh/Jonnathan-Landi/InterpolateR)
+
 # Introduction
 
 `InterpolateR` is one of the most efficient R packages for spatial interpolation. It leverages vectorized operations to maximize computational efficiency while maintaining high accuracy in interpolation tasks. The package integrates both traditional and advanced interpolation methods, making it a versatile tool for a wide range of spatial analysis applications.
