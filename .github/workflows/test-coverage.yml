@@ -51,20 +51,22 @@ jobs:
 
       - name: Test coverage
         run: |
+          dir.create("coverage", showWarnings = FALSE)
           cov <- covr::package_coverage(
             quiet = FALSE,
             clean = FALSE,
             install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
           )
-          covr::to_cobertura(cov)
+          covr::to_cobertura(cov, "coverage/cobertura.xml")
         shell: Rscript {0}
+
+      - name: Verificar archivos generados
+        run: ls -l coverage/
 
       - uses: codecov/codecov-action@v4.1.0
         with:
-          fail_ci_if_error: ${{ github.event_name != 'pull_request' && true || false }}
-          file: ./cobertura.xml
-          plugin: noop
-          disable_search: true
+          fail_ci_if_error: true
+          file: coverage/cobertura.xml
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test results
@@ -72,4 +74,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-test-failures-${{ matrix.os }}
-          path: ${{ runner.temp }}/package
+          path: coverage/
