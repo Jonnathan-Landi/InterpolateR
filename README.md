@@ -2,8 +2,7 @@
 
 <!-- CRAN:Check -->
 
-[![R-CMD-check](https://github.com/Jonnathan-Landi/InterpolateR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Jonnathan-Landi/InterpolateR/actions/workflows/R-CMD-check.yaml) [![CRAN status](https://www.r-pkg.org/badges/version/InterpolateR)](https://cran.r-project.org/package=InterpolateR) [![CRAN RStudio mirror downloads](https://cranlogs.r-pkg.org/badges/InterpolateR)](https://www.r-pkg.org/pkg/InterpolateR)
-[![Codecov test coverage](https://codecov.io/gh/Jonnathan-Landi/InterpolateR/branch/main/graph/badge.svg)](https://app.codecov.io/gh/Jonnathan-Landi/InterpolateR)
+[![R-CMD-check](https://github.com/Jonnathan-Landi/InterpolateR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Jonnathan-Landi/InterpolateR/actions/workflows/R-CMD-check.yaml) [![CRAN status](https://www.r-pkg.org/badges/version/InterpolateR)](https://cran.r-project.org/package=InterpolateR) [![CRAN RStudio mirror downloads](https://cranlogs.r-pkg.org/badges/InterpolateR)](https://www.r-pkg.org/pkg/InterpolateR) [![Codecov test coverage](https://codecov.io/gh/Jonnathan-Landi/InterpolateR/branch/main/graph/badge.svg)](https://app.codecov.io/gh/Jonnathan-Landi/InterpolateR)
 
 # Introduction
 
@@ -25,11 +24,19 @@ The package is continuously evolving, with new interpolation methods being added
 
 # Installation
 
-Install the development version from GitHub
+Install the stable version from CRAN.
+
+```{r}
+install.packages("InterpolateR")
+```
+
+You can install the development version from GitHub.
 
 ```{r}
 devtools::install_github("Jonnathan-Landi/InterpolateR")
 ```
+
+**Note:** This version may include errors due to the incorporation of new functionalities.
 
 # Getting Started
 
@@ -51,9 +58,8 @@ Each column (except the first one) represents a different season (Est_1, Est_2, 
 
 `BD_Coord` must have the following structure:
 
-|       |        |         |      |
-|-------|--------|---------|------|
 | Cod   | X      | Y       | Z    |
+|-------|--------|---------|------|
 | Est_1 | 720227 | 9680901 | 2668 |
 | Est_2 | 732260 | 9682763 | 2527 |
 | Est_3 | 714574 | 967587  | 2956 |
