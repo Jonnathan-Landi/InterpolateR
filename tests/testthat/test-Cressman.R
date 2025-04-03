@@ -37,4 +37,14 @@ test_that("Cressman Objective Analysis Method works correctly", {
   expect_true(inherits(Radius_10, "SpatRaster"))
   expect_equal(terra::nlyr(Radius_20), length(unique(BD_Obs$Date)))
   expect_equal(terra::nlyr(Radius_10), length(unique(BD_Obs$Date)))
+  ##################################################################################################
+  # I check that the algorithms are not executed when the input data are not correct.
+  invalid_shapefile = data.frame(x = 1:10, y = 1:10)
+  fail_shape = Cressman(
+    BD_Obs, BD_Coord, invalid_shapefile, grid_resolution = 5,
+    search_radius = c(20, 10), training = 1,
+    stat_validation = "M001", Rain_threshold = Rain_threshold,
+    save_model = FALSE
+  )
+  expect_true(inherits(fail_shape, "try-error"))
 })
