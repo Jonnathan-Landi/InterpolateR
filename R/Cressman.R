@@ -148,7 +148,7 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
 
   # BD_Obs can be a data.table or a data.frame
   if (!inherits(BD_Obs, c("data.table", "data.frame"))) stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
-  names(BD_Obs)[1] = "Date"
+  names(BD_Obs)[1] <- "Date"
 
   # BD_Coord can be a data.table or a data.frame
   if (!inherits(BD_Coord, c("data.table", "data.frame"))) stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
@@ -159,13 +159,13 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
   ##############################################################################
   #                          Verify if validation is to be done                #
   ##############################################################################
-  names_col = setdiff(names(BD_Obs), "Date")
-  Ids = data.table::data.table(Cod = names_col, ID = 1:length(names_col))
+  names_col <- setdiff(names(BD_Obs), "Date")
+  Ids <- data.table::data.table(Cod = names_col, ID = 1:length(names_col))
   if (training != 1 | !is.null(stat_validation)) {
     data_val = .select_data(BD_Obs, BD_Coord, training = training, seed = 123,
                            stat_validation = stat_validation)
-    train_data = data_val$train_data
-    train_cords = data_val$train_cords
+    train_data <- data_val$train_data
+    train_cords <- data_val$train_cords
   } else {
     message("The training parameter was not entered. The model will be trained with all the data.")
     train_data <- BD_Obs
@@ -174,8 +174,8 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
   ##############################################################################
   #                           Zone of Interpolation                            #
   ##############################################################################
-  grid_resolution = grid_resolution * 1000
-  coord.ref = terra::crs(shapefile)
+  grid_resolution <- grid_resolution * 1000
+  coord.ref <- terra::crs(shapefile)
   spl_layer <- rast(
     terra::ext(shapefile),
     resolution = grid_resolution,
@@ -190,7 +190,7 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
     variable.name = "Cod",
     value.name = "var"
   )
-  Cressman_data = Ids[Cressman_data, on = "Cod"]
+  Cressman_data <- Ids[Cressman_data, on = "Cod"]
   Dates_extracted <- unique(Cressman_data[, Date])
   Points_Train <- merge(Cressman_data, train_cords, by = "Cod")
   setDT(Points_Train)

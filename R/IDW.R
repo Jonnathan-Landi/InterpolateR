@@ -131,13 +131,13 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   ##############################################################################
   #                          Verify if validation is to be done                #
   ##############################################################################
-  names_col = setdiff(names(BD_Obs), "Date")
-  Ids = data.table::data.table(Cod = names_col, ID = 1:length(names_col))
+  names_col <- setdiff(names(BD_Obs), "Date")
+  Ids <- data.table::data.table(Cod = names_col, ID = 1:length(names_col))
   if (training != 1 | !is.null(stat_validation)) {
-    data_val = .select_data(BD_Obs, BD_Coord, training = training, seed = 123,
+    data_val <- .select_data(BD_Obs, BD_Coord, training = training, seed = 123,
                            stat_validation = stat_validation)
-    train_data = data_val$train_data
-    train_cords = data_val$train_cords
+    train_data <- data_val$train_data
+    train_cords <- data_val$train_cords
   } else {
     message("The training parameter was not entered. The model will be trained with all the data.")
     train_data <- BD_Obs
@@ -146,8 +146,8 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   ##############################################################################
   #                          Interpolation zone                                #
   ##############################################################################
-  coord.ref = terra::crs(shapefile)
-  grid_resolution = grid_resolution * 1000 # Convert resolution to KM
+  coord.ref <- terra::crs(shapefile)
+  grid_resolution <- grid_resolution * 1000 # Convert resolution to KM
   spl_layer <- terra::rast(
     terra::ext(shapefile),
     resolution = grid_resolution,
@@ -162,8 +162,8 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
     variable.name = "Cod",
     value.name = "var"
   )
-  # Ids = train_data[, .(Cod = names_col, ID = 1:length(names_col))]
-  IDW_data = Ids[IDW_data, on = "Cod"]
+
+  IDW_data <- Ids[IDW_data, on = "Cod"]
   Dates_extracted <- unique(IDW_data[, Date])
   Points_Train <- merge(IDW_data, train_cords, by = "Cod")
   setDT(Points_Train)
@@ -180,9 +180,9 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   coords <- as.matrix(data_IDW[, .(X, Y)])
   distancias <- data.table::as.data.table(terra::distance(terra::vect(coords, crs = coord.ref), Points_VectTrain))
   setnames(distancias,  Points_VectTrain$Cod)
-  data_IDW = cbind(data_IDW, distancias)
+  data_IDW <- cbind(data_IDW, distancias)
 
-  estaciones = as.character(Points_VectTrain$Cod)
+  estaciones <- as.character(Points_VectTrain$Cod)
   denoms <- lapply(estaciones, function(est) 1 / (data_IDW[[est]]^p))
   denoms_dt <- setnames(data.table::as.data.table(denoms), paste0("d_", estaciones))
 
@@ -206,7 +206,7 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
     return(result)
   }
 
-  call_idw = function(day) {
+  call_idw <- function(day) {
     data_obs <- IDW_data[Date == as.Date(day), ]
     if (sum(data_obs$var, na.rm = TRUE) == 0) {
       return(spl_layer)
