@@ -97,7 +97,7 @@ test_that("RFmerge works correctly", {
     CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
     DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
   )
-  ext(Cov_3$MSWEP) <- ext(0, 10, 0, 10)
+  terra::ext(Cov_3$MSWEP) <- terra::ext(Cov_3$MSWEP) * 2
   resultado <- tryCatch({
     RFmerge(BD_Obs, BD_Coord, Cov_3, mask = shapefile, n_round = 1, ntree = 2000,
             seed = 123, training = 1, stat_validation = c("M004"),
@@ -117,7 +117,7 @@ test_that("RFmerge works correctly", {
     CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
     DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
   )
-  crs(Cov_4$MSWEP) <- crs("+proj=longlat +datum=WGS84 +no_defs")
+  terra::crs(Cov_4$MSWEP) <- "EPSG:4326"
   resultado <- tryCatch({
     RFmerge(BD_Obs, BD_Coord, Cov_4, mask = shapefile_e, n_round = 1, ntree = 2000,
             seed = 123, training = 1, stat_validation = c("M004"),
@@ -145,6 +145,7 @@ test_that("RFmerge works correctly", {
     message("warning: ", w$message)
     return(NULL)
   })
+
   # BD_Coord can be a data.table or a data.frame
   BD_Coord_m <- as.matrix(BD_Coord)
   resultado <- tryCatch({

@@ -207,7 +207,7 @@ test_that("RFplus works correctly", {
     CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
     DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
   )
-  ext(Cov_4$MSWEP) <- ext(0, 10, 0, 10)
+  terra::ext(Cov_4$MSWEP) <- terra::ext(Cov_4$MSWEP) * 2
   resultado <- tryCatch({
     RFplus(BD_Obs, BD_Coord, Cov_4, n_round = 1, wet.day = 0.1,
            ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
@@ -227,7 +227,7 @@ test_that("RFplus works correctly", {
     CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
     DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
   )
-  crs(Cov_5$MSWEP) <- crs("+proj=longlat +datum=WGS84 +no_defs")
+  terra::crs(Cov_5$MSWEP) <- "EPSG:4326"
   resultado <- tryCatch({
     RFplus(BD_Obs, BD_Coord, Cov_5, n_round = 1, wet.day = 0.1,
            ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
