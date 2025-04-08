@@ -207,7 +207,7 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   }
 
   call_idw <- function(day) {
-    data_obs <- IDW_data[Date == as.Date(day), ]
+    data_obs <- IDW_data[Date == day, ] #bug
     if (sum(data_obs$var, na.rm = TRUE) == 0) {
       return(spl_layer)
     } else {

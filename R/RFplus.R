@@ -186,16 +186,17 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
   ##############################################################################
   # Verify the BD_Obs is data.table
   if (!inherits(BD_Obs, "data.table")) stop("The data of the on-site stations should be a data.table.")
+  names(BD_Obs)[1] <- "Date"
 
   # Verify the columns of BD_Coord
   if (!inherits(BD_Coord, "data.table")) stop("The coordinate data of the on-site stations must be a data.table.")
 
-  # Check if there is a Date column
-  date_column <- names(BD_Obs)[which(sapply(BD_Obs, function(x) inherits(x, c("Date", "IDate", "POSIXct"))))]
-  if (length(date_column) == 0) stop("The Date column was not found in the observed data.")
-
-  # Change the column name to match the full code
-  if (date_column != "Date") setnames(BD_Obs, date_column, "Date")
+#   # Check if there is a Date column
+#   date_column <- names(BD_Obs)[which(sapply(BD_Obs, function(x) inherits(x, c("Date", "IDate", "POSIXct"))))]
+#   if (length(date_column) == 0) stop("The Date column was not found in the observed data.")
+#
+#   # Change the column name to match the full code
+#   if (date_column != "Date") setnames(BD_Obs, date_column, "Date")
 
   # Verify that all dates have at least one entry recorded
   Dates_NA <- BD_Obs[apply(BD_Obs[, .SD, .SDcols = -1], 1, function(x) all(is.na(x))), Date]
@@ -284,7 +285,7 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
   # Model of the Random Forest for the progressive correction 1 y 2 ------------
   RF_Modelplus = function(day_COV, fecha) {
     names(day_COV) = sapply(day_COV, names)
-    data_obs <- training_data[Date == as.Date(fecha), ]
+    data_obs <- training_data[Date == fecha, ]
 
     if (data_obs[, sum(var, na.rm = TRUE)] == 0) return(Sample_lyrs)
 

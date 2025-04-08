@@ -213,6 +213,7 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
   # Pre-calcular matrices de pesos para cada radio
   search_radius <- search_radius * 1000
   estaciones <- Points_VectTrain$Cod
+
   weights <- lapply(search_radius, function(R) {
     R_sq <- R^2
     w <- (R_sq - data_Crsmn[, estaciones, with = FALSE]^2) / (R_sq + data_Crsmn[, estaciones, with = FALSE]^2)
@@ -243,7 +244,7 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
 
   # Función de llamada optimizada
   call_crsm_opt <- function(day) {
-    data_obs <- Cressman_data[Date == as.Date(day), .(Cod, var)]
+    data_obs <- Cressman_data[Date == day, .(Cod, var)]
     if (nrow(data_obs) == 0) return(NULL)
     crsmn_logic_opt(data_obs)
   }

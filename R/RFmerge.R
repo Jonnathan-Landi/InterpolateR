@@ -232,7 +232,7 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   RF_Modelmerge = function(day_COV, fecha) {
     names(day_COV) = sapply(day_COV, names)
 
-    data_obs <- training_data[Date == as.Date(fecha), ]
+    data_obs <- training_data[Date == fecha, ]
 
     if (data_obs[, sum(var, na.rm = TRUE)] == 0) return(Sample_lyrs) # if the sum of var is 0, I assume that there is no precipitation in the whole basin.
 
