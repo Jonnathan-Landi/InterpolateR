@@ -1,8 +1,8 @@
 # This function prepares the files for validation
 .select_data = function(BD_Obs, BD_Coord, training, seed, stat_validation = NULL) {
   if (is.null(stat_validation)) {
-    message(paste("Random validation mode.", (training * 100), "% of the stations will be used for training and", (100 - (training * 100)), "% for validation."))
     if (!(training %between% c(0, 1))) stop("The training parameter must be between 0 and 1.")
+    message(paste("Random validation mode.", (training * 100), "% of the stations will be used for training and", (100 - (training * 100)), "% for validation."))
     set.seed(seed)
     columns <- setdiff(names(BD_Obs), "Date")
     train_columns <- sample(columns, size = floor(training * length(columns)))
