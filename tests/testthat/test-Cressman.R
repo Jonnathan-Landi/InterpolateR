@@ -74,4 +74,75 @@ test_that("Cressman Objective Analysis Method works correctly", {
     message("warning: ", w$message)
     return(NULL)
   })
+
+  # Shapefile must be a 'spatVector' object and coordinate reference system (CRS) must be defined
+  shape = data.frame(x = 1:10, y = rnorm(10))
+  resultado <- tryCatch({
+    Cressman(
+      BD_Obs, BD_Coord, shape, grid_resolution = 5,
+      search_radius = c(20, 10), training = 1,
+      stat_validation = NULL, Rain_threshold = Rain_threshold,
+      save_model = FALSE
+    )
+  }, error = function(e) {
+    message("Parameter detected correctly: ", e$message)
+    return(NULL)
+  }, warning = function(w) {
+    message("warning: ", w$message)
+    return(NULL)
+  })
+
+  # BD_Obs can be a data.table or a data.frame
+  Bd = as.matrix(BD_Obs)
+  cords = as.matrix(BD_Coord)
+
+  resultado <- tryCatch({
+    Cressman(
+      Bd, BD_Coord, shapefile, grid_resolution = 5,
+      search_radius = c(20, 10), training = 1,
+      stat_validation = NULL, Rain_threshold = Rain_threshold,
+      save_model = FALSE
+    )
+  }, error = function(e) {
+    message("Parameter detected correctly: ", e$message)
+    return(NULL)
+  }, warning = function(w) {
+    message("warning: ", w$message)
+    return(NULL)
+  })
+
+  # BD_Coord can be a data.table or a data.frame
+  resultado <- tryCatch({
+    Cressman(
+      BD_Obs, cords, shapefile, grid_resolution = 5,
+      search_radius = c(20, 10), training = 1,
+      stat_validation = NULL, Rain_threshold = Rain_threshold,
+      save_model = FALSE
+    )
+  }, error = function(e) {
+    message("Parameter detected correctly: ", e$message)
+    return(NULL)
+  }, warning = function(w) {
+    message("warning: ", w$message)
+    return(NULL)
+  })
+
+  #Check that the coordinate names appear in the observed data
+  bd_2 = BD_Coord
+  bd_2[3,1] <- "aa"
+  resultado <- tryCatch({
+    Cressman(
+      BD_Obs, bd_2, shapefile, grid_resolution = 5,
+      search_radius = c(20, 10), training = 1,
+      stat_validation = NULL, Rain_threshold = Rain_threshold,
+      save_model = FALSE
+    )
+  }, error = function(e) {
+    message("Parameter detected correctly: ", e$message)
+    return(NULL)
+  }, warning = function(w) {
+    message("warning: ", w$message)
+    return(NULL)
+  })
+
 })
