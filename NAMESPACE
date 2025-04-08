@@ -7,7 +7,6 @@ importFrom("stats", "na.omit", "setNames")
 importFrom("future.apply", "future_lapply")
 
 export(IDW)
-export(create_data)
 export(Cressman)
 export(RFmerge)
 export(RFplus)
