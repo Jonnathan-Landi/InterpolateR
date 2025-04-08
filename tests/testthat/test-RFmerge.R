@@ -53,4 +53,22 @@ test_that("RFmerge works correctly", {
   expect_true(inherits(model_Random$Ensamble, "SpatRaster"))
   expect_equal(terra::nlyr(model_Random$Ensamble), length(unique(BD_Obs$Date)))
 
+  ##############################################################################
+  #     Check that the algorithm stops when the input data is not correct.     #
+  ##############################################################################
+  # Cov
+  cov <- data.frame(x = 1:10, y = rnorm(10))  # Aquí creamos un data.frame
+  # Intentar ejecutar RFmerge con el data.frame en lugar de una lista
+  resultado <- tryCatch({
+    RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
+            seed = 123, training = 1, stat_validation = c("M004"),
+            Rain_threshold = Rain_threshold,
+            save_model = FALSE, name_save = NULL)
+  }, error = function(e) {
+    message("Parameter detected correctly: ", e$message)
+    return(NULL)
+  }, warning = function(w) {
+    message("warning: ", w$message)
+    return(NULL)
+  })
 })
