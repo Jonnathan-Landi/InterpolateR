@@ -57,8 +57,7 @@ test_that("RFmerge works correctly", {
   #     Check that the algorithm stops when the input data is not correct.     #
   ##############################################################################
   # Cov
-  cov <- data.frame(x = 1:10, y = rnorm(10))  # Aquí creamos un data.frame
-  # Intentar ejecutar RFmerge con el data.frame en lugar de una lista
+  cov <- data.frame(x = 1:10, y = rnorm(10))
   resultado <- tryCatch({
     RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
             seed = 123, training = 1, stat_validation = c("M004"),
@@ -71,4 +70,75 @@ test_that("RFmerge works correctly", {
     message("warning: ", w$message)
     return(NULL)
   })
-})
+
+  # Verify that the cov are type SpatRaster
+  cov = list(
+    MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
+    CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
+    DEM = data.frame(x = 1:10, y = rnorm(10))
+  )
+
+  resultado <- tryCatch({
+    RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
+            seed = 123, training = 1, stat_validation = c("M004"),
+            Rain_threshold = Rain_threshold,
+            save_model = FALSE, name_save = NULL)
+  }, error = function(e) {
+    message("error message: ", e$message)
+    return(NULL)
+  }, warning = function(w) {
+    message("warning: ", w$message)
+    return(NULL)
+  })
+
+  # BD_Coord can be a data.table or a data.frame
+  cov = list(
+    MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
+    CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
+    DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
+  )
+  BD_Obs_m = as.matrix(BD_Obs)
+  resultado <- tryCatch({
+    RFmerge(BD_Obs_m, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
+            seed = 123, training = 1, stat_validation = c("M004"),
+            Rain_threshold = Rain_threshold,
+            save_model = FALSE, name_save = NULL)
+  }, error = function(e) {
+    message("error message: ", e$message)
+    return(NULL)
+  }, warning = function(w) {
+    message("warning: ", w$message)
+    return(NULL)
+  })
+
+  BD_Coord_m <- as.matrix(BD_Coord)
+  resultado <- tryCatch({
+    RFmerge(BD_Obs, BD_Coord_m, cov, mask = shapefile, n_round = 1, ntree = 2000,
+            seed = 123, training = 1, stat_validation = c("M004"),
+            Rain_threshold = Rain_threshold,
+            save_model = FALSE, name_save = NULL)
+  }, error = function(e) {
+    message("error message: ", e$message)
+    return(NULL)
+  }, warning = function(w) {
+    message("warning: ", w$message)
+    return(NULL)
+  })
+
+  # Check if mask is a SpatVector object
+  shapefile_e <- data.frame(x = 1:10, y = rnorm(10))
+  resultado <- tryCatch({
+    RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile_e, n_round = 1, ntree = 2000,
+            seed = 123, training = 1, stat_validation = c("M004"),
+            Rain_threshold = Rain_threshold,
+            save_model = FALSE, name_save = NULL)
+  }, error = function(e) {
+    message("error message: ", e$message)
+    return(NULL)
+  }, warning = function(w) {
+    message("warning: ", w$message)
+    return(NULL)
+  })
+
+
+}) # end

@@ -55,4 +55,23 @@ test_that("Cressman Objective Analysis Method works correctly", {
   expect_true(inherits(Radius_10_SN, "SpatRaster"))
   expect_equal(terra::nlyr(Radius_20_SN), length(unique(BD_Obs$Date)))
   expect_equal(terra::nlyr(Radius_10_SN), length(unique(BD_Obs$Date)))
+
+  ##############################################################################
+  #     Check that the algorithm stops when the input data is not correct.     #
+  ##############################################################################
+  # test parameter training
+  resultado <- tryCatch({
+    Cressman(
+      BD_Obs, BD_Coord, shapefile, grid_resolution = 5,
+      search_radius = c(20, 10), training = 2,
+      stat_validation = NULL, Rain_threshold = Rain_threshold,
+      save_model = FALSE
+    )
+  }, error = function(e) {
+    message("Parameter detected correctly: ", e$message)
+    return(NULL)
+  }, warning = function(w) {
+    message("warning: ", w$message)
+    return(NULL)
+  })
 })
