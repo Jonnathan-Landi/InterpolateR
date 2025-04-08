@@ -127,22 +127,6 @@ test_that("Cressman Objective Analysis Method works correctly", {
     return(NULL)
   })
 
-  #Check that the coordinate names appear in the observed data
-  bd_2 = BD_Coord
-  bd_2[3,1] <- "aa"
-  resultado <- tryCatch({
-    Cressman(
-      BD_Obs, bd_2, shapefile, grid_resolution = 5,
-      search_radius = c(20, 10), training = 1,
-      stat_validation = NULL, Rain_threshold = Rain_threshold,
-      save_model = FALSE
-    )
-  }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
+
 
 })
