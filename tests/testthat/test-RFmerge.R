@@ -161,7 +161,7 @@ test_that("RFmerge works correctly", {
     return(NULL)
   })
 
-  # Check that the coordinate names appear in the observed data
+  # # Check that the coordinate names appear in the observed data
   bd_2 = BD_Coord
   bd_2[3,1] <- "aa"
   resultado <- tryCatch({
