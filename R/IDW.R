@@ -207,7 +207,7 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   }
 
   call_idw <- function(day) {
-    data_obs <- IDW_data[Date == day, ] #bug
+    data_obs <- IDW_data[Date == day, ]
     if (sum(data_obs$var, na.rm = TRUE) == 0) {
       return(spl_layer)
     } else {
@@ -220,7 +220,7 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   raster_Model <- pbapply::pblapply(Dates_extracted, function(day) {
     call_idw(day)
   })
-
+  ##############################################################################
   Ensamble <- terra::rast(raster_Model)
   if (!is.null(n_round)) Ensamble <- terra::app(Ensamble, \(x) round(x, n_round))
   names(Ensamble) <- as.character(Dates_extracted)
