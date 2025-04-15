@@ -1,10 +1,14 @@
 # Version 1.3-1 (Development)
 
 ### New Features
+
+-   We have restructured the RFplus logic, reducing the execution time by 50%.
 -   We have removed the RFplus validation that prevented you from limiting the Date to be only of “Date”, “IDate” or “Posixct” format. Now, you can enter any format for the date.
 -   We add the function “create_data” to create the BD_Obs file from multiple individual files.
 
 ### Bug Fixed
+
+-   We have fixed a bug in RFplus and RFmerge that caused the algorithm not to compile when the layer “DEM” was entered with a name other than “DEM”. After fixing this bug, the user will be able to set any name for this layer.
 -   We have corrected bugs in the RFmerge and RFplus algorithms that prevented interpolations to a scale other than daily. Now, these algorithms allow interpolation to any time scale (from minutes) to years or other time scales.
 -   We have fixed a bug in the IDW and Cressman algorithm, which caused BD_Obs data to be transformed to daily format, regardless of the scale entered. This bug did not allow interpolations to hourly or smaller scales.
 
