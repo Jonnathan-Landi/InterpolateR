@@ -16,7 +16,7 @@ Among the traditional interpolation techniques included are:
 
 Additionally, `InterpolateR` incorporates advanced machine learning-based interpolation techniques:
 
--   **RFmerge**: A Random Forest-based method designed to merge multiple precipitation products and ground observations to enhance interpolation accuracy.
+-   **RFmerge**: Methodology developed by Baez-Villanueva et al. (2020) for the fusion of satellite precipitation datasets with ground-based observations
 
 -   **RFplus**: A novel approach that combines Random Forest with Quantile Mapping to refine interpolated estimates and minimize bias.
 
