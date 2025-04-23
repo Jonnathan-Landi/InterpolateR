@@ -16,4 +16,4 @@ test_that("Create data Method works correctly", {
   # Visualize percentage of missing data
   print(head(data_2$Na_stations))
 
-}
+})
