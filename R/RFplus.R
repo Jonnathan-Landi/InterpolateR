@@ -158,6 +158,13 @@ utils::globalVariables(c("Cod", "ID", "X", "Y", "Z","Date", "Obs", "sim", "resid
 #'
 #' @author
 #'  Jonnathan Augusto landi Bermeo, jonnathan.landi@outlook.com
+#'
+#' @importFrom terra crs ext extract nlyr rast vect distance predict writeRaster as.data.frame
+#' @importFrom data.table %chin% %between% setDT fread copy fifelse transpose setorder data.table as.data.table := melt rbindlist setkey setnames
+#' @importFrom pbapply pblapply pboptions
+#' @importFrom qmap fitQmapQUANT fitQmapRQUANT doQmapRQUANT doQmapQUANT
+#' @importFrom randomForest randomForest
+#' @importFrom stats na.omit setNames
 #' @export
 
 RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE,

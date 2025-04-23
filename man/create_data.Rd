@@ -23,11 +23,7 @@ create_data(file.path, Start_date, End_Date, ncores = NULL, max.na = NULL)
  file.path = system.file("extdata/Folds_ejs_create_data", package = "InterpolateR")
 
  # Create a data with all stations
- data = create_data(file.path, Start_date = "2015-01-01", End_Date = "2015-03-01", ncores = 1)
-
- # Visualize the data
- print(head(data))
-
+ data = create_data(file.path, Start_date = "2015-01-01", End_Date = "2015-03-01", ncores = NULL)
 
 }}
 }
