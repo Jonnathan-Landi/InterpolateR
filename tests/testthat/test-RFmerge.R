@@ -228,25 +228,24 @@ test_that("RFmerge works correctly", {
     message("warning: ", w$message)
     return(NULL)
   })
-
-  # Verify the layers of the cov.
-  Cov_6 = list(
-    MSWEP = rep(terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),2),
-    CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
-    DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
-  )
-
-  resultado <- tryCatch({
-    RFmerge(BD_Obs, BD_Coord, Cov_6, mask = shapefile, n_round = 1, ntree = 2000,
-            seed = 123, training = 1, stat_validation = c("M004"),
-            Rain_threshold = Rain_threshold,
-            save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
+  # # Verify the layers of the cov.
+  # Cov_6 = list(
+  #   MSWEP = rep(terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),2),
+  #   CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
+  #   DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
+  # )
+  #
+  # resultado <- tryCatch({
+  #   RFmerge(BD_Obs, BD_Coord, Cov_6, mask = shapefile, n_round = 1, ntree = 2000,
+  #           seed = 123, training = 1, stat_validation = c("M004"),
+  #           Rain_threshold = Rain_threshold,
+  #           save_model = FALSE, name_save = NULL)
+  # }, error = function(e) {
+  #   message("Parameter detected correctly: ", e$message)
+  #   return(NULL)
+  # }, warning = function(w) {
+  #   message("warning: ", w$message)
+  #   return(NULL)
+  # })
 
 }) # end

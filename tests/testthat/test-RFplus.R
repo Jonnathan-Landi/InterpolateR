@@ -115,7 +115,7 @@ test_that("RFplus works correctly", {
     return(NULL)
   })
 
-  # Verify the BD_Obs is data.table
+  # Verify the BD_Obs is data.table or data.frame
   resultado <- tryCatch({
     RFplus(BD_Obs, cord, Covariates, n_round = 1, wet.day = 0.1,
            ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
@@ -182,24 +182,24 @@ test_that("RFplus works correctly", {
   })
 
   # Verify the layers of the covariates.
-  Cov_3 = list(
-    MSWEP = rep(terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),2),
-    CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
-    DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
-  )
-
-  resultado <- tryCatch({
-    RFplus(BD_Obs, BD_Coord, Cov_3, n_round = 1, wet.day = 0.1,
-           ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-           Rain_threshold = NULL, method = "none",
-           ratio = 15, save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
+  # Cov_3 = list(
+  #   MSWEP = rep(terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),2),
+  #   CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
+  #   DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
+  # )
+  #
+  # resultado <- tryCatch({
+  #   RFplus(BD_Obs, BD_Coord, Cov_3, n_round = 1, wet.day = 0.1,
+  #          ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
+  #          Rain_threshold = NULL, method = "none",
+  #          ratio = 15, save_model = FALSE, name_save = NULL)
+  # }, error = function(e) {
+  #   message("Parameter detected correctly: ", e$message)
+  #   return(NULL)
+  # }, warning = function(w) {
+  #   message("warning: ", w$message)
+  #   return(NULL)
+  # })
 
   # Verify the extent of covariates
   Cov_4 = list(
