@@ -9,7 +9,7 @@ Maintainer: Jonnathan Landi <jonnathan.landi@outlook.com>
 Description: Spatial interpolation toolkit designed for environmental and geospatial applications. It includes a range of methods, from traditional techniques to advanced machine learning approaches, ensuring accurate and efficient estimation of values in unobserved locations.
 License: GPL (>=3)
 Depends: R (>= 4.4.0)
-Imports: terra, randomForest, data.table, pbapply, qmap, hydroGOF, future.apply
+Imports: terra, randomForest, data.table, pbapply, qmap, hydroGOF, future.apply, future
 URL: https://github.com/Jonnathan-Landi/InterpolateR
 BugReports: https://github.com/Jonnathan-Landi/InterpolateR/issues
 Encoding: UTF-8
