@@ -36,9 +36,9 @@
 #'
 #' - \code{"Z"}:
 #'   Altitude of the station in meters.
-#' @param cov A list of covariates used as independent variables in the RFmerge. Each covariate should be a
+#' @param cov A list of cov used as independent variables in the RFmerge. Each covariate should be a
 #'   `SpatRaster` object (from the `terra` package) and can represent satellite-derived weather variables or a Digital
-#'    Elevation Model (DEM). All covariates should have the same number of layers (bands), except for the DEM, which must have only one layer.
+#'    Elevation Model (DEM). All cov should have the same number of layers (bands), except for the DEM, which must have only one layer.
 #'
 #' @param mask A shapefile defining the study area.
 #'   If provided, the shapefile must be of class `SpatVector` (from the `terra` package) with a UTM coordinate reference system.
@@ -70,7 +70,7 @@
 #' # Load data from on-site observations
 #'  data("BD_Obs", package = "InterpolateR")
 #'  data("BD_Coord", package = "InterpolateR")
-#' # Load the covariates
+#' # Load the cov
 #' cov <- list(
 #'  MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
 #'  CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
@@ -179,12 +179,6 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   nlyrs_tots <- which(nlyr_covs != 1)
   nlyr_rep <- nlyr_covs[nlyrs_tots[1]]
   DEM <- cov[[index_dem]]
-  DEM <- terra::rast(replicate(nlyr_rep, DEM))
-  cov[[index_dem]] <- DEM
-
-  # Verify the layers of the cov.
-  if (length(unique(sapply(cov, function(x) terra::nlyr(x)))) > 1) stop("The number of covariate layers does not match. Check the input data.")
-
   ##############################################################################
   #                          Verify if validation is to be done                #
   ##############################################################################
@@ -210,16 +204,14 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
     id.vars = "Date",
     variable.name = "Cod",
     value.name = "var"
-  )[, ID := as.numeric(factor(Cod))]
+  )
 
   # Date of the data
   Dates_extracted <- unique(training_data[, Date])
   Points_Train <- merge(training_data, train_cords, by = "Cod")
   setDT(Points_Train)
 
-  Points_Train <- unique(Points_Train, by = "Cod")[, .(ID, Cod, X, Y, Z)]
-  setorder(Points_Train, ID)
-
+  Points_Train <- unique(Points_Train, by = "Cod")[, .(Cod, X, Y, Z)]
   Points_VectTrain <- terra::vect(Points_Train, geom = c("X", "Y"), crs = crs(Sample_lyrs))
 
   # Calculate the Distance Euclidean
@@ -229,64 +221,82 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   ##############################################################################
   #                                 RF merge method                            #
   ##############################################################################
-  RF_Modelmerge = function(day_COV, fecha) {
-    names(day_COV) = sapply(day_COV, names)
+  day_COV <- list(
+    DEM = DEM,
+    distance_ED = rast(distance_ED)
+  )
 
-    data_obs <- training_data[Date == fecha, ]
+  day_COV = rast(day_COV)
+  data_cov = lapply(day_COV, terra::extract, y = Points_VectTrain) |>
+    Reduce(\(x, y) merge(x, y, by = "ID", all = TRUE), x = _) |>
+    (\(d) {
+      setDT(d)
+    })()
 
-    if (data_obs[, sum(var, na.rm = TRUE)] == 0) return(Sample_lyrs) # if the sum of var is 0, I assume that there is no precipitation in the whole basin.
+  data_cov$DEM <- Points_VectTrain$Z
+  data_cov$Cod <- Points_VectTrain$Cod
+  data_cov$ID = NULL
 
-    # If the sum of var not is 0, I assume that there is precipitation in the whole basin.
-      points_EstTrain <- merge(
-        data_obs[, .(ID, Cod)],
-        Points_Train[, .(Cod, X, Y, Z)],
-        by = "Cod"
-      )[order(ID)] |>
-        terra::vect(geom = c("X", "Y"), crs = crs(Sample_lyrs))
+  # Generate data for prediction
+  name_covs <- names(cov)[nlyr_covs != 1]
+  data_simSat = lapply(name_covs, function (name) {
+    raster = cov[[name]]
+    dt = data.table(extract(raster, y = Points_VectTrain))
+    dt[, Cod := Points_VectTrain$Cod]
+    dt[,ID := NULL]
+    dt = transpose(dt, make.names = "Cod")
+    dt = cbind(
+      Date = Dates_extracted,
+      dt
+    )
 
-        add_rasters <- function(lyr, pattern) {
-          r = terra::rast(get(lyr)[points_EstTrain$Cod])  # Obtiene el raster basado en la capa `lyr`
-          names(r) = paste0(pattern, "_", seq_along(points_EstTrain$Cod))  # Usa `pattern` en los nombres
-          r
-        }
+    dt <- melt(
+      dt,
+      id.vars = "Date",
+      variable.name = "Cod",
+      value.name = name
+    )
+    return(dt)
+  })
 
-        day_COV$dist_ED <- add_rasters("distance_ED", "dist_ED")
+  dt_sim =  Reduce(function(x, y) merge(x, y, by = c("Date", "Cod"), all = TRUE), data_simSat)
+  dt_merged = merge(dt_sim, data_cov, by = "Cod", all.x = TRUE)
+  dt_final = merge(dt_merged, training_data[, .(Date, Cod, var)], by = c("Date", "Cod"), all.x = TRUE)
 
-          data_cov = lapply(day_COV, terra::extract, y = points_EstTrain) |>
-            Reduce(\(x, y) merge(x, y, by = "ID", all = TRUE), x = _) |>
-            (\(d) {
-              setDT(d)
-              d[, DEM := points_EstTrain$Z[match(ID, points_EstTrain$ID)]]
-              d
-            })()
+  # Module for Ffmerge refactoring
 
-            dt.train = merge(
-              data_obs[, .(ID, var)],
-              data_cov,
-              by = "ID"
-            )
-            features <- setdiff(names(dt.train), "ID")
-            cov_Sat <- terra::rast(day_COV)
-                Model_P1 <- randomForest::randomForest(
-                  var ~ .,
-                  data = dt.train[, ..features],
-                  ntree = ntree,
-                  na.action = na.omit
-                ) |>
-                  suppressWarnings()
+  RF_Modelmerge = function(date_P, Cov_pred_combined) {
+    train_RF = dt_final[Date == date_P, ]
+    if (train_RF[, sum(var, na.rm = TRUE)] == 0) return(Sample_lyrs)
+    features_ff <- setdiff(names(train_RF), c("Cod", "Date"))
+    set.seed(seed)
 
-                return(terra::predict(cov_Sat, Model_P1, na.rm = TRUE))
+    Model_P1 <- randomForest::randomForest(
+      var ~ .,
+      data = train_RF[, ..features_ff],
+      ntree = ntree,
+      na.action = na.omit
+     ) |>
+      suppressWarnings()
+
+    return(terra::predict(Cov_pred_combined, Model_P1, na.rm = TRUE))
   }
 
   # Run the model
+  Cov_pred <- cov[!grepl("DEM", names(cov))]
   pbapply::pboptions(type = "timer", use_lb = T, style = 1, char = "=")
   message("Analysis in progress. Please wait...")
-  raster_Model <- pbapply::pblapply(Dates_extracted, function(fecha) {
-    day_COV <- lapply(cov, function(x) x[[match(fecha, Dates_extracted)]])
-    RF_Modelmerge(day_COV, fecha)
+  raster_Model <- pbapply::pblapply(Dates_extracted, function(date_P) {
+    Cov_pred <- lapply(Cov_pred, function(x) x[[match(date_P, Dates_extracted)]])
+    Cov_pred_combined <- c(Cov_pred, list(day_COV))
+    Cov_pred_combined <- rast(Cov_pred_combined)
+    ff = setdiff(names(dt_final), c("Cod", "Date", "var"))
+    names(Cov_pred_combined) = ff
+    RF_Modelmerge(date_P, Cov_pred_combined)
   })
 
   Ensamble <- terra::rast(raster_Model)
+
   if (!is.null(n_round)) Ensamble <- terra::app(Ensamble, \(x) round(x, n_round))
 
   if (!is.null(mask)) {
