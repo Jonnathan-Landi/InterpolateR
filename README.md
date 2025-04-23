@@ -2,7 +2,7 @@
 
 <!-- CRAN:Check -->
 
-[![R-CMD-check](https://github.com/Jonnathan-Landi/InterpolateR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Jonnathan-Landi/InterpolateR/actions/workflows/R-CMD-check.yaml) [![CRAN status](https://www.r-pkg.org/badges/version/InterpolateR)](https://cran.r-project.org/package=InterpolateR) [![CRAN RStudio mirror downloads](https://cranlogs.r-pkg.org/badges/InterpolateR)](https://www.r-pkg.org/pkg/InterpolateR) [![Codecov test coverage](https://codecov.io/gh/Jonnathan-Landi/InterpolateR/branch/main/graph/badge.svg)](https://app.codecov.io/gh/Jonnathan-Landi/InterpolateR) [![CRAN rev deps](https://jangorecki.gitlab.io/rdeps/InterpolateR/CRAN_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps) [![CRAN rev deps](https://jangorecki.gitlab.io/rdeps/InterpolateR/CRAN_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
+[![R-CMD-check](https://github.com/Jonnathan-Landi/InterpolateR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Jonnathan-Landi/InterpolateR/actions/workflows/R-CMD-check.yaml) [![CRAN status](https://www.r-pkg.org/badges/version/InterpolateR)](https://cran.r-project.org/package=InterpolateR) [![CRAN RStudio mirror downloads](https://cranlogs.r-pkg.org/badges/InterpolateR)](https://www.r-pkg.org/pkg/InterpolateR) [![Codecov test coverage](https://codecov.io/gh/Jonnathan-Landi/InterpolateR/branch/main/graph/badge.svg)](https://app.codecov.io/gh/Jonnathan-Landi/InterpolateR)
 
 # Introduction
 
