@@ -53,9 +53,9 @@ Longitude of the station in UTM format.
 Altitude of the station in meters.
 }}
 
-\item{cov}{A list of covariates used as independent variables in the RFmerge. Each covariate should be a
+\item{cov}{A list of cov used as independent variables in the RFmerge. Each covariate should be a
 \code{SpatRaster} object (from the \code{terra} package) and can represent satellite-derived weather variables or a Digital
-Elevation Model (DEM). All covariates should have the same number of layers (bands), except for the DEM, which must have only one layer.}
+Elevation Model (DEM). All cov should have the same number of layers (bands), except for the DEM, which must have only one layer.}
 
 \item{mask}{A shapefile defining the study area.
 If provided, the shapefile must be of class \code{SpatVector} (from the \code{terra} package) with a UTM coordinate reference system.
@@ -139,7 +139,7 @@ library(InterpolateR)
 # Load data from on-site observations
  data("BD_Obs", package = "InterpolateR")
  data("BD_Coord", package = "InterpolateR")
-# Load the covariates
+# Load the cov
 cov <- list(
  MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
  CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
