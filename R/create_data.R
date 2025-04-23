@@ -11,7 +11,7 @@
 #' @param file.path `character`. Path to the folder containing the CSV files. Each file should represent a single station and be named using the station ID (e.g., `M001.csv`). Each file must have exactly two columns: a date column and a column of in-situ observations for the variable to be interpolated.
 #' @param Start_date `Date`. Start date of the period to be included in the merged dataset. If the CSV files cover different date ranges, this defines the initial bound of the common time window for merging.
 #' @param End_Date `Date`. End date of the period to be included in the merged dataset. This sets the upper bound of the time window to consider across all files.
-#' @param ncores `integer`. Number of processing cores to be used when reading and merging CSV files in parallel. The default is 2.
+#' @param ncores `integer`. Number of processing cores to be used when reading and merging CSV files in parallel. If If you want to perform the procedure without parallelization, set `ncores = NULL`. The default is `NULL`.
 #' @param max.na `numeric`, optional. Maximum acceptable percentage of missing values per station (from 0 to 100). Stations exceeding this threshold will be excluded. If `NULL`, no filtering is performed. Default is `NULL`.
 #'
 #'#' @examples
@@ -43,7 +43,7 @@
 #' @author
 #'  Jonnathan Augusto landi Bermeo, jonnathan.landi@outlook.com
 #' @export
-create_data = function(file.path, Start_date, End_Date, ncores = 2, max.na = NULL) {
+create_data = function(file.path, Start_date, End_Date, ncores = NULL, max.na = NULL) {
   file_list <- list.files(path = file.path, pattern = "*.csv", full.names = TRUE)
   station_names <- paste0(gsub("\\.csv$", "", basename(file_list)))
 
@@ -54,9 +54,13 @@ create_data = function(file.path, Start_date, End_Date, ncores = 2, max.na = NUL
     return(est)
   }
 
-  plan(multisession, workers = ncores)
-  data_base = future_lapply(file_list, read_data)
-  plan(sequential)
+  if (is.null(ncores)) {
+    data_base = lapply(file_list, read_data)
+  } else {
+    plan(multisession, workers = ncores)
+    data_base = future_lapply(file_list, read_data)
+    plan(sequential)
+  }
 
   data_base = lapply(data_base, function(dt) {
     dt[Date >= Start_date & Date <= End_Date]
