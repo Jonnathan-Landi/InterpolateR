@@ -2,6 +2,7 @@
 
 ### New Features
 
+-   We have restructured the RFmerge logic, reducing the execution time by 50%.
 -   We have restructured the RFplus logic, reducing the execution time by 50%.
 -   We have removed the RFplus validation that prevented you from limiting the Date to be only of “Date”, “IDate” or “Posixct” format. Now, you can enter any format for the date.
 -   We add the function “create_data” to create the BD_Obs file from multiple individual files.
