@@ -4,7 +4,7 @@
 \alias{create_data}
 \title{Create a Unified Observation Dataset in the BD_Obs Format from Multiple CSV Files}
 \usage{
-create_data(file.path, Start_date, End_Date, ncores = 1, max.na = NULL)
+create_data(file.path, Start_date, End_Date, ncores = 2, max.na = NULL)
 }
 \arguments{
 \item{file.path}{\code{character}. Path to the folder containing the CSV files. Each file should represent a single station and be named using the station ID (e.g., \code{M001.csv}). Each file must have exactly two columns: a date column and a column of in-situ observations for the variable to be interpolated.}
@@ -13,7 +13,7 @@ create_data(file.path, Start_date, End_Date, ncores = 1, max.na = NULL)
 
 \item{End_Date}{\code{Date}. End date of the period to be included in the merged dataset. This sets the upper bound of the time window to consider across all files.}
 
-\item{ncores}{\code{integer}. Number of processing cores to be used when reading and merging CSV files in parallel. To disable parallelization, set \code{ncores = 1}. The default is 1.}
+\item{ncores}{\code{integer}. Number of processing cores to be used when reading and merging CSV files in parallel. The default is 2.}
 
 \item{max.na}{\code{numeric}, optional. Maximum acceptable percentage of missing values per station (from 0 to 100). Stations exceeding this threshold will be excluded. If \code{NULL}, no filtering is performed. Default is \code{NULL}.
 

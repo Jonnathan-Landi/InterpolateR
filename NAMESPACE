@@ -5,9 +5,10 @@ importFrom("qmap", "fitQmapQUANT", "fitQmapRQUANT", "doQmapRQUANT", "doQmapQUANT
 importFrom("randomForest", "randomForest")
 importFrom("stats", "na.omit", "setNames")
 importFrom("future.apply", "future_lapply")
-importFrom("future", "plan")
+importFrom("future", "plan", "multisession", "sequential")
 
 export(IDW)
 export(Cressman)
 export(RFmerge)
 export(RFplus)
+export(create_data)
