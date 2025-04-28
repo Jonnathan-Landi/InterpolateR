@@ -42,9 +42,9 @@ The dataset should be structured as follows:
 }}
 
 \item{BD_Coord}{A \code{data.table} or \code{data.frame} containing the metadata of the ground stations. It must include the following columns:
-#' - \code{"Cod"}:
-Unique identifier for each ground station.
 \itemize{
+\item \code{"Cod"}:
+Unique identifier for each ground station.
 \item \code{"X"}:
 Latitude of the station in UTM format.
 \item \code{"Y"}:
@@ -83,7 +83,8 @@ This parameter should be entered only when the validation is to include categori
 Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
 \strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.}
 
-\item{save_model}{Logical value indicating whether the interpolation file should be saved to disk. The default value is \code{FALSE}. indicating that the interpolated file should not be saved.}
+\item{save_model}{Logical value indicating whether the interpolation file should be saved to disk. The default value is \code{FALSE}. indicating that the interpolated file should not be saved.
+If set to \code{TRUE}, be sure to set the working directory beforehand using \code{setwd(path)} to specify where the files should be saved.}
 
 \item{name_save}{Character string indicating the name under which the interpolation raster file will be saved. By default the algorithm sets as output name: 'Model_RFmerge'.
 as the code will internally assign it.}
@@ -120,7 +121,7 @@ Hanssen-Kuipers Discriminant (HK); Equal Threat Score (ETS) or Gilbert Skill Sco
 The parameter should be entered as a named list, where each item represents a category and the name of the item is the category name.
 The elements of each category must be a numeric vector with two values: the lower and upper limits of the category.
 For example:
-#' \code{Rain_threshold = list(
+\code{Rain_threshold = list(
   no_rain = c(0, 1),
   light_rain = c(1, 5),
   moderate_rain = c(5, 20),
@@ -135,10 +136,10 @@ It is important that these categories are entered according to the study region,
 
 \examples{
 \donttest{
-library(InterpolateR)
 # Load data from on-site observations
  data("BD_Obs", package = "InterpolateR")
  data("BD_Coord", package = "InterpolateR")
+
 # Load the cov
 cov <- list(
  MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
@@ -152,7 +153,6 @@ cov <- list(
                          Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
 
 # Visualize the results
-
 # Precipitation results within the study area
 modelo_rainfall = model_RFmerge$Ensamble
 

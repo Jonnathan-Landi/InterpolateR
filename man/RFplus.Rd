@@ -96,7 +96,8 @@ No distribution adjustment is applied. Only Random Forest-based bias correction 
 
 \item{ratio}{integer Maximum search radius (in kilometers) for the quantile mapping setting using the nearest station. (default = 15 km)}
 
-\item{save_model}{Logical value indicating whether the interpolation file should be saved to disk. The default value is \code{FALSE}. indicating that the interpolated file should not be saved.}
+\item{save_model}{Logical value indicating whether the interpolation file should be saved to disk. The default value is \code{FALSE}. indicating that the interpolated file should not be saved.
+If set to \code{TRUE}, be sure to set the working directory beforehand using \code{setwd(path)} to specify where the files should be saved.}
 
 \item{name_save}{Character string indicating the name under which the interpolation raster file will be saved. By default the algorithm sets as output name: 'Model_RFplus'.}
 }
@@ -117,7 +118,7 @@ A data frame containing categorical evaluation metrics such as Probability of De
 }
 }
 \description{
-MS-GOP is a machine learning algorithm for merging satellite-based and ground precipitation data.
+MS-GOP (RFplus) is a machine learning algorithm for merging satellite-based and ground precipitation data.
 It combines Random Forest for spatial prediction, residual modeling for bias correction, and quantile mapping for final adjustment, ensuring accurate precipitation estimates across different temporal scales
 }
 \details{
@@ -141,7 +142,7 @@ Hanssen-Kuipers Discriminant (HK); Equal Threat Score (ETS) or Gilbert Skill Sco
 The parameter should be entered as a named list, where each item represents a category and the name of the item is the category name.
 The elements of each category must be a numeric vector with two values: the lower and upper limits of the category.
 For example:
-#' \code{Rain_threshold = list(
+\code{Rain_threshold = list(
   no_rain = c(0, 1),
   light_rain = c(1, 5),
   moderate_rain = c(5, 20),
@@ -156,9 +157,6 @@ It is important that these categories are entered according to the study region,
 
 \examples{
 \donttest{
-# Load the libraries
-library(InterpolateR)
-
 # Load the data
  data("BD_Obs", package = "InterpolateR")
  data("BD_Coord", package = "InterpolateR")
@@ -175,8 +173,8 @@ model = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
         ntree = 2000, seed = 123, training = 0.8,
         Rain_threshold = list(no_rain = c(0, 1), light_rain = c(1, 5)),
         method = "RQUANT", ratio = 10, save_model = FALSE, name_save = NULL)
-# Visualize the results
 
+# Visualize the results
 # Precipitation results within the study area
 modelo_rainfall = model$Ensamble
 

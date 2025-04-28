@@ -2,7 +2,11 @@
 % Please edit documentation in R/create_data.R
 \name{create_data}
 \alias{create_data}
-\title{Create a Unified Observation Dataset in the BD_Obs Format from Multiple CSV Files}
+\title{Create a Unified Observation Dataset in the BD_Obs Format from Multiple CSV Files
+This function constructs a unified dataset (\code{BD_Obs} structure) by merging multiple CSV files,
+each containing in-situ observations from different stations. The function standardizes the format
+required by downstream interpolation or bias correction algorithms by aligning all station data
+into a single \code{data.table}, with dates as rows and station identifiers as columns.}
 \usage{
 create_data(file.path, Start_date, End_Date, ncores = NULL, max.na = NULL)
 }
@@ -15,17 +19,7 @@ create_data(file.path, Start_date, End_Date, ncores = NULL, max.na = NULL)
 
 \item{ncores}{\code{integer}. Number of processing cores to be used when reading and merging CSV files in parallel. If If you want to perform the procedure without parallelization, set \code{ncores = NULL}. The default is \code{NULL}.}
 
-\item{max.na}{\code{numeric}, optional. Maximum acceptable percentage of missing values per station (from 0 to 100). Stations exceeding this threshold will be excluded. If \code{NULL}, no filtering is performed. Default is \code{NULL}.
-
-#' @examples
-\donttest{
- # Example usage
- file.path = system.file("extdata/Folds_ejs_create_data", package = "InterpolateR")
-
- # Create a data with all stations
- data = create_data(file.path, Start_date = "2015-01-01", End_Date = "2015-03-01", ncores = NULL)
-
-}}
+\item{max.na}{\code{numeric}, optional. Maximum acceptable percentage of missing values per station (from 0 to 100). Stations exceeding this threshold will be excluded. If \code{NULL}, no filtering is performed. Default is \code{NULL}.}
 }
 \value{
 If \code{max.na} is \code{NULL}, the function returns a \code{data.table} structured in the \code{BD_Obs} format,
@@ -41,14 +35,17 @@ useful for assessing data quality and supporting decisions about station selecti
 }
 }
 \description{
-This function constructs a unified dataset (\code{BD_Obs} structure) by merging multiple CSV files,
-each containing in-situ observations from different stations. The function standardizes the format
-required by downstream interpolation or bias correction algorithms by aligning all station data
-into a single \code{data.table}, with dates as rows and station identifiers as columns.
-}
-\details{
 Each input CSV file must contain exactly two columns: the first with dates (\code{Date}) and the second
 with the in-situ measurements of the variable to be interpolated.
+}
+\examples{
+\donttest{
+# Example usage
+file.path <- system.file("extdata/Folds_ejs_create_data", package = "InterpolateR")
+
+# Create a data with all stations
+data <- create_data(file.path, Start_date = "2015-01-01", End_Date = "2015-03-01", ncores = NULL)
+}
 }
 \author{
 Jonnathan Augusto landi Bermeo, jonnathan.landi@outlook.com

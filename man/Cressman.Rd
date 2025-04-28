@@ -69,7 +69,8 @@ This parameter should be entered only when the validation is to include categori
 Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
 \strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.}
 
-\item{save_model}{Logical value indicating whether the interpolation file should be saved to disk. The default value is \code{FALSE}. indicating that the interpolated file should not be saved.}
+\item{save_model}{Logical value indicating whether the interpolation file should be saved to disk. The default value is \code{FALSE}. indicating that the interpolated file should not be saved.
+If set to \code{TRUE}, be sure to set the working directory beforehand using \code{setwd(path)} to specify where the files should be saved.}
 }
 \value{
 The return value depends on whether validation has been performed.
@@ -111,7 +112,7 @@ Hanssen-Kuipers Discriminant (HK); Equal Threat Score (ETS) or Gilbert Skill Sco
 The parameter should be entered as a named list, where each item represents a category and the name of the item is the category name.
 The elements of each category must be a numeric vector with two values: the lower and upper limits of the category.
 For example:
-#' \code{Rain_threshold = list(
+\code{Rain_threshold = list(
   no_rain = c(0, 1),
   light_rain = c(1, 5),
   moderate_rain = c(5, 20),
@@ -144,7 +145,6 @@ the cut-off radius.
 
 \examples{
 \donttest{
-library(InterpolateR)
 # Load data from on-site observations
  data("BD_Obs", package = "InterpolateR")
  data("BD_Coord", package = "InterpolateR")
