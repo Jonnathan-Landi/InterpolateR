@@ -1,7 +1,9 @@
-# Version 1.3-1 (Development)
+# Version 1.3-4 (Development)
 
 ### New Features
 
+-   We performed a refactoring of the project for its future maintenance and addition of new functionalities.
+-   We have removed hydroGOF dependencies for the calculation of goodness-of-fit metrics. The metrics will now be hosted as internal functions.
 -   We have added a new function to create a file similar to BD_Obs from several csv files.
 -   We have restructured the RFmerge logic, reducing the execution time by 50%.
 -   We have restructured the RFplus logic, reducing the execution time by 50%.
@@ -10,6 +12,7 @@
 
 ### Bug Fixed
 
+-   Fixed several bugs within the RFmerge tests
 -   We have fixed a bug in RFplus and RFmerge that caused the algorithm not to compile when the layer “DEM” was entered with a name other than “DEM”. After fixing this bug, the user will be able to set any name for this layer.
 -   We have corrected bugs in the RFmerge and RFplus algorithms that prevented interpolations to a scale other than daily. Now, these algorithms allow interpolation to any time scale (from minutes) to years or other time scales.
 -   We have fixed a bug in the IDW and Cressman algorithm, which caused BD_Obs data to be transformed to daily format, regardless of the scale entered. This bug did not allow interpolations to hourly or smaller scales.
