@@ -1,4 +1,4 @@
-test_that("RFmerge works correctly", {
+testthat::test_that("RFmerge works correctly", {
   skip_on_cran()
   data("BD_Obs", package = "InterpolateR")
   data("BD_Coord", package = "InterpolateR")
@@ -30,8 +30,8 @@ test_that("RFmerge works correctly", {
                           save_model = FALSE, name_save = NULL)
 
   # Check that the result is a raster object
-  expect_true(inherits(model_RFmerge$Ensamble, "SpatRaster"))
-  expect_equal(terra::nlyr(model_RFmerge$Ensamble), length(unique(BD_Obs$Date)))
+  testthat::expect_true(inherits(model_RFmerge$Ensamble, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(model_RFmerge$Ensamble), length(unique(BD_Obs$Date)))
 
   ##################################################################################################
   # Testing without validation
@@ -40,8 +40,8 @@ test_that("RFmerge works correctly", {
                           save_model = FALSE, name_save = NULL)
 
   # Check that the result is a raster object
-  expect_true(inherits(model_Sn, "SpatRaster"))
-  expect_equal(terra::nlyr(model_Sn), length(unique(BD_Obs$Date)))
+  testthat::expect_true(inherits(model_Sn, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(model_Sn), length(unique(BD_Obs$Date)))
 
   ##################################################################################################
   # Random tesging
@@ -50,8 +50,8 @@ test_that("RFmerge works correctly", {
                           save_model = FALSE, name_save = NULL)
 
   # Check that the result is a raster object
-  expect_true(inherits(model_Random$Ensamble, "SpatRaster"))
-  expect_equal(terra::nlyr(model_Random$Ensamble), length(unique(BD_Obs$Date)))
+  testthat::expect_true(inherits(model_Random$Ensamble, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(model_Random$Ensamble), length(unique(BD_Obs$Date)))
 
   ##############################################################################
   #     Check that the algorithm stops when the input data is not correct.     #
@@ -64,7 +64,7 @@ test_that("RFmerge works correctly", {
             Rain_threshold = Rain_threshold,
             save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -84,7 +84,7 @@ test_that("RFmerge works correctly", {
             Rain_threshold = Rain_threshold,
             save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("error message: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -104,7 +104,7 @@ test_that("RFmerge works correctly", {
             Rain_threshold = Rain_threshold,
             save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -119,12 +119,12 @@ test_that("RFmerge works correctly", {
   )
   terra::crs(Cov_4$MSWEP) <- "EPSG:4326"
   resultado <- tryCatch({
-    RFmerge(BD_Obs, BD_Coord, Cov_4, mask = shapefile_e, n_round = 1, ntree = 2000,
+    RFmerge(BD_Obs, BD_Coord, Cov_4, mask = shapefile, n_round = 1, ntree = 2000,
             seed = 123, training = 1, stat_validation = c("M004"),
             Rain_threshold = Rain_threshold,
             save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -139,7 +139,7 @@ test_that("RFmerge works correctly", {
             Rain_threshold = Rain_threshold,
             save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("error message: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -154,7 +154,7 @@ test_that("RFmerge works correctly", {
             Rain_threshold = Rain_threshold,
             save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("error message: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -170,7 +170,7 @@ test_that("RFmerge works correctly", {
             Rain_threshold = Rain_threshold,
             save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -186,7 +186,7 @@ test_that("RFmerge works correctly", {
             Rain_threshold = Rain_threshold,
             save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("error message: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -202,7 +202,7 @@ test_that("RFmerge works correctly", {
             Rain_threshold = Rain_threshold,
             save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -222,30 +222,10 @@ test_that("RFmerge works correctly", {
             Rain_threshold = Rain_threshold,
             save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
     return(NULL)
   })
-  # # Verify the layers of the cov.
-  # Cov_6 = list(
-  #   MSWEP = rep(terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),2),
-  #   CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
-  #   DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
-  # )
-  #
-  # resultado <- tryCatch({
-  #   RFmerge(BD_Obs, BD_Coord, Cov_6, mask = shapefile, n_round = 1, ntree = 2000,
-  #           seed = 123, training = 1, stat_validation = c("M004"),
-  #           Rain_threshold = Rain_threshold,
-  #           save_model = FALSE, name_save = NULL)
-  # }, error = function(e) {
-  #   message("Parameter detected correctly: ", e$message)
-  #   return(NULL)
-  # }, warning = function(w) {
-  #   message("warning: ", w$message)
-  #   return(NULL)
-  # })
-
 }) # end

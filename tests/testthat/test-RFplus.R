@@ -1,4 +1,4 @@
-test_that("RFplus works correctly", {
+testthat::test_that("RFplus works correctly", {
   skip_on_cran()
 
   data("BD_Obs", package = "InterpolateR")
@@ -40,14 +40,14 @@ test_that("RFplus works correctly", {
                  ratio = 15, save_model = FALSE, name_save = NULL)
   ##################################################################################################
   # Check that the result is a raster object
-  expect_true(inherits(model_none$Ensamble, "SpatRaster"))
-  expect_true(inherits(model_Rquant$Ensamble, "SpatRaster"))
-  expect_true(inherits(model_QUANT$Ensamble, "SpatRaster"))
+  testthat::expect_true(inherits(model_none$Ensamble, "SpatRaster"))
+  testthat::expect_true(inherits(model_Rquant$Ensamble, "SpatRaster"))
+  testthat::expect_true(inherits(model_QUANT$Ensamble, "SpatRaster"))
 
   # Check that the number of layers in the raster object is equal to the number of unique dates
-  expect_equal(terra::nlyr(model_none$Ensamble), length(unique(BD_Obs$Date)))
-  expect_equal(terra::nlyr(model_Rquant$Ensamble), length(unique(BD_Obs$Date)))
-  expect_equal(terra::nlyr(model_QUANT$Ensamble), length(unique(BD_Obs$Date)))
+  testthat::expect_equal(terra::nlyr(model_none$Ensamble), length(unique(BD_Obs$Date)))
+  testthat::expect_equal(terra::nlyr(model_Rquant$Ensamble), length(unique(BD_Obs$Date)))
+  testthat::expect_equal(terra::nlyr(model_QUANT$Ensamble), length(unique(BD_Obs$Date)))
   ##################################################################################################
   # Testing without validation
   model_sn = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
@@ -56,9 +56,9 @@ test_that("RFplus works correctly", {
                  ratio = 15, save_model = FALSE, name_save = NULL)
 
   # Check that the result is a raster object
-  expect_true(inherits(model_sn, "SpatRaster"))
+  testthat::expect_true(inherits(model_sn, "SpatRaster"))
   # Check that the number of layers in the raster object is equal to the number of unique dates
-  expect_equal(terra::nlyr(model_sn), length(unique(BD_Obs$Date)))
+  testthat::expect_equal(terra::nlyr(model_sn), length(unique(BD_Obs$Date)))
 
   ##############################################################################
   #     Check that the algorithm stops when the input data is not correct.     #
@@ -71,7 +71,7 @@ test_that("RFplus works correctly", {
            Rain_threshold = NULL, method = "none",
            ratio = 15, save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -91,7 +91,7 @@ test_that("RFplus works correctly", {
            Rain_threshold = NULL, method = "none",
            ratio = 15, save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -108,7 +108,7 @@ test_that("RFplus works correctly", {
            Rain_threshold = NULL, method = "none",
            ratio = 15, save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -122,7 +122,7 @@ test_that("RFplus works correctly", {
            Rain_threshold = NULL, method = "none",
            ratio = 15, save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -138,7 +138,7 @@ test_that("RFplus works correctly", {
            Rain_threshold = NULL, method = "none",
            ratio = 15, save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -154,7 +154,7 @@ test_that("RFplus works correctly", {
            Rain_threshold = NULL, method = "none",
            ratio = 15, save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -174,32 +174,12 @@ test_that("RFplus works correctly", {
            Rain_threshold = NULL, method = "none",
            ratio = 15, save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
     return(NULL)
   })
-
-  # Verify the layers of the covariates.
-  # Cov_3 = list(
-  #   MSWEP = rep(terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),2),
-  #   CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
-  #   DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
-  # )
-  #
-  # resultado <- tryCatch({
-  #   RFplus(BD_Obs, BD_Coord, Cov_3, n_round = 1, wet.day = 0.1,
-  #          ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-  #          Rain_threshold = NULL, method = "none",
-  #          ratio = 15, save_model = FALSE, name_save = NULL)
-  # }, error = function(e) {
-  #   message("Parameter detected correctly: ", e$message)
-  #   return(NULL)
-  # }, warning = function(w) {
-  #   message("warning: ", w$message)
-  #   return(NULL)
-  # })
 
   # Verify the extent of covariates
   Cov_4 = list(
@@ -214,7 +194,7 @@ test_that("RFplus works correctly", {
            Rain_threshold = NULL, method = "none",
            ratio = 15, save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -234,14 +214,11 @@ test_that("RFplus works correctly", {
            Rain_threshold = NULL, method = "none",
            ratio = 15, save_model = FALSE, name_save = NULL)
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
     return(NULL)
   })
-
-
-
 })
 

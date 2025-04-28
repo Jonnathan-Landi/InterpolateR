@@ -1,4 +1,4 @@
-test_that("Cressman Objective Analysis Method works correctly", {
+testthat::test_that("Cressman Objective Analysis Method works correctly", {
   skip_on_cran()
 
   data("BD_Obs", package = "InterpolateR")
@@ -34,10 +34,10 @@ test_that("Cressman Objective Analysis Method works correctly", {
   Validation_results_10 = Interpolated_Cressman$Validation[[2]] # Validation results with a 10 km radius
 
   # Check that the result is a raster object
-  expect_true(inherits(Radius_20, "SpatRaster"))
-  expect_true(inherits(Radius_10, "SpatRaster"))
-  expect_equal(terra::nlyr(Radius_20), length(unique(BD_Obs$Date)))
-  expect_equal(terra::nlyr(Radius_10), length(unique(BD_Obs$Date)))
+  testthat::expect_true(inherits(Radius_20, "SpatRaster"))
+  testthat::expect_true(inherits(Radius_10, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(Radius_20), length(unique(BD_Obs$Date)))
+  testthat::expect_equal(terra::nlyr(Radius_10), length(unique(BD_Obs$Date)))
   ##################################################################################################
   # Testing without validation
   Interpolation_SN = Cressman(
@@ -51,10 +51,10 @@ test_that("Cressman Objective Analysis Method works correctly", {
   Radius_10_SN = Interpolation_SN[[2]] # Interpolated data with a 10 km radius
 
   # Check that the result is a raster object
-  expect_true(inherits(Radius_20_SN, "SpatRaster"))
-  expect_true(inherits(Radius_10_SN, "SpatRaster"))
-  expect_equal(terra::nlyr(Radius_20_SN), length(unique(BD_Obs$Date)))
-  expect_equal(terra::nlyr(Radius_10_SN), length(unique(BD_Obs$Date)))
+  testthat::expect_true(inherits(Radius_20_SN, "SpatRaster"))
+  testthat::expect_true(inherits(Radius_10_SN, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(Radius_20_SN), length(unique(BD_Obs$Date)))
+  testthat::expect_equal(terra::nlyr(Radius_10_SN), length(unique(BD_Obs$Date)))
 
   ##############################################################################
   #     Check that the algorithm stops when the input data is not correct.     #
@@ -68,7 +68,7 @@ test_that("Cressman Objective Analysis Method works correctly", {
       save_model = FALSE
     )
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -85,7 +85,7 @@ test_that("Cressman Objective Analysis Method works correctly", {
       save_model = FALSE
     )
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -104,7 +104,7 @@ test_that("Cressman Objective Analysis Method works correctly", {
       save_model = FALSE
     )
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
@@ -120,13 +120,10 @@ test_that("Cressman Objective Analysis Method works correctly", {
       save_model = FALSE
     )
   }, error = function(e) {
-    message("Parameter detected correctly: ", e$message)
+    message("Correct test: ", e$message)
     return(NULL)
   }, warning = function(w) {
     message("warning: ", w$message)
     return(NULL)
   })
-
-
-
 })
