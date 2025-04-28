@@ -1,4 +1,4 @@
-#' Merging of satellite datasets with ground observations using Random Forest
+#' @title Merging of satellite datasets with ground observations using Random Forest
 #'
 #' @description
 #' RFmerge is a methodology developed by Baez-Villanueva et al. (2020) for the fusion of satellite precipitation datasets with ground-based observations, with the objective of improving the accuracy and spatial representativeness of the data.
@@ -25,7 +25,7 @@
 #'   - Each station column contains numeric values representing observed measurements.
 #'   - The column names (station identifiers) must be unique and match those in `BD_Coord$Cod` to ensure proper spatial referencing.
 #' @param BD_Coord A `data.table` or `data.frame` containing the metadata of the ground stations. It must include the following columns:
-#' #' - \code{"Cod"}:
+#' - \code{"Cod"}:
 #'    Unique identifier for each ground station.
 #'
 #' - \code{"X"}:
@@ -60,16 +60,16 @@
 #'  Each list item should represent a category, with the category name as the list item name and a numeric vector specifying the lower and upper bounds of that category.
 #'  \strong{Note:} See the "Notes" section for additional details on how to define categories, use this parameter for validation, and example configurations.
 #' @param save_model Logical value indicating whether the interpolation file should be saved to disk. The default value is `FALSE`. indicating that the interpolated file should not be saved.
-#     If set to `TRUE`, be sure to set the working directory beforehand using `setwd(path)` to specify where the files should be saved.
+#'     If set to `TRUE`, be sure to set the working directory beforehand using `setwd(path)` to specify where the files should be saved.
 #' @param name_save Character string indicating the name under which the interpolation raster file will be saved. By default the algorithm sets as output name: 'Model_RFmerge'.
 #' as the code will internally assign it.
 #' @references Baez-Villanueva, O. M.; Zambrano-Bigiarini, M.; Beck, H.; McNamara, I.; Ribbe, L.; Nauditt, A.; Birkel, C.; Verbist, K.; Giraldo-Osorio, J.D.; Thinh, N.X. (2020). RF-MEP: a novel Random Forest method for merging gridded precipitation products and ground-based measurements, Remote Sensing of Environment, 239, 111610. doi:10.1016/j.rse.2019.111606.
 #' @examples
 #' \donttest{
-#' library(InterpolateR)
 #' # Load data from on-site observations
 #'  data("BD_Obs", package = "InterpolateR")
 #'  data("BD_Coord", package = "InterpolateR")
+#' 
 #' # Load the cov
 #' cov <- list(
 #'  MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
@@ -83,7 +83,6 @@
 #'                          Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
 #'
 #' # Visualize the results
-#'
 #' # Precipitation results within the study area
 #' modelo_rainfall = model_RFmerge$Ensamble
 #'
@@ -118,7 +117,7 @@
 #'   The parameter should be entered as a named list, where each item represents a category and the name of the item is the category name.
 #'   The elements of each category must be a numeric vector with two values: the lower and upper limits of the category.
 #'   For example:
-#' #' \code{Rain_threshold = list(
+#' \code{Rain_threshold = list(
 #'   no_rain = c(0, 1),
 #'   light_rain = c(1, 5),
 #'   moderate_rain = c(5, 20),
@@ -133,7 +132,6 @@
 RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2000,
                    seed = 123,  training = 1, stat_validation = NULL, Rain_threshold = NULL,
                    save_model = FALSE, name_save = NULL) {
-
   ##############################################################################
   #                               Check input data                             #
   ##############################################################################
@@ -156,7 +154,7 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   if (!inherits(BD_Coord, c("data.table", "data.frame"))) stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
 
   # Check that the coordinate names appear in the observed data
-  if (!all(BD_Coord$Cod %chin% setdiff(names(BD_Obs), "Date"))) stop("The names of the coordinates do not appear in the observed data.")
+  if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date"))) stop("The names of the coordinates do not appear in the observed data.")
 
   # Check if mask is a SpatVector object
   if (!is.null(mask) && !inherits(mask, "SpatVector")) stop("mask must be a 'SpatVector' object.")
@@ -166,7 +164,7 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   if (length(Dates_NA) > 0) stop(paste0("No data was found for the dates: ", paste(Dates_NA, collapse = ", ")))
 
   # Check that the coordinate names appear in the observed data
-  if (!all(BD_Coord$Cod %chin% setdiff(names(BD_Obs), "Date"))) stop("The names of the coordinates do not appear in the observed data.")
+  if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date"))) stop("The names of the coordinates do not appear in the observed data.")
   ##############################################################################
   #               Verify that there is a DEM and manage DEM layers.            #
   ##############################################################################
@@ -184,7 +182,7 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   ##############################################################################
   if (training != 1 | !is.null(stat_validation)) {
     data_val = .select_data(BD_Obs, BD_Coord, training = training,
-                           seed = seed, stat_validation = stat_validation)
+                            stat_validation = stat_validation)
     train_data = data_val$train_data
     train_cords = data_val$train_cords
   } else {
@@ -199,7 +197,7 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   Sample_lyrs <- DEM[[1]] * 0
 
   # Data for training
-  training_data <- melt(
+  training_data <- data.table::melt(
     train_data,
     id.vars = "Date",
     variable.name = "Cod",
@@ -209,13 +207,13 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   # Date of the data
   Dates_extracted <- unique(training_data[, Date])
   Points_Train <- merge(training_data, train_cords, by = "Cod")
-  setDT(Points_Train)
+  data.table::setDT(Points_Train)
 
   Points_Train <- unique(Points_Train, by = "Cod")[, .(Cod, X, Y, Z)]
-  Points_VectTrain <- terra::vect(Points_Train, geom = c("X", "Y"), crs = crs(Sample_lyrs))
+  Points_VectTrain <- terra::vect(Points_Train, geom = c("X", "Y"), crs = terra::crs(Sample_lyrs))
 
   # Calculate the Distance Euclidean
-  distance_ED <- setNames(lapply(1:nrow(Points_VectTrain), function(i) {
+  distance_ED <- stats::setNames(lapply(1:nrow(Points_VectTrain), function(i) {
     terra::distance(Sample_lyrs, Points_VectTrain[i, ], rasterize = FALSE)
   }), Points_VectTrain$Cod)
   ##############################################################################
@@ -223,14 +221,14 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   ##############################################################################
   day_COV <- list(
     DEM = DEM,
-    distance_ED = rast(distance_ED)
+    distance_ED = terra::rast(distance_ED)
   )
 
-  day_COV = rast(day_COV)
+  day_COV = terra::rast(day_COV)
   data_cov = lapply(day_COV, terra::extract, y = Points_VectTrain) |>
     Reduce(\(x, y) merge(x, y, by = "ID", all = TRUE), x = _) |>
     (\(d) {
-      setDT(d)
+      data.table::setDT(d)
     })()
 
   data_cov$DEM <- Points_VectTrain$Z
@@ -241,16 +239,16 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   name_covs <- names(cov)[nlyr_covs != 1]
   data_simSat = lapply(name_covs, function (name) {
     raster = cov[[name]]
-    dt = data.table(extract(raster, y = Points_VectTrain))
+    dt = data.table::data.table(terra::extract(raster, y = Points_VectTrain))
     dt[, Cod := Points_VectTrain$Cod]
     dt[,ID := NULL]
-    dt = transpose(dt, make.names = "Cod")
+    dt = data.table::transpose(dt, make.names = "Cod")
     dt = cbind(
       Date = Dates_extracted,
       dt
     )
 
-    dt <- melt(
+    dt <- data.table::melt(
       dt,
       id.vars = "Date",
       variable.name = "Cod",
@@ -268,14 +266,14 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   RF_Modelmerge = function(date_P, Cov_pred_combined) {
     train_RF = dt_final[Date == date_P, ]
     if (train_RF[, sum(var, na.rm = TRUE)] == 0) return(Sample_lyrs)
-    features_ff <- setdiff(names(train_RF), c("Cod", "Date"))
+    features_ff <- base::setdiff(names(train_RF), c("Cod", "Date"))
     set.seed(seed)
 
     Model_P1 <- randomForest::randomForest(
       var ~ .,
       data = train_RF[, ..features_ff],
       ntree = ntree,
-      na.action = na.omit
+      na.action = stats::na.omit # REVISAR ESTO
      ) |>
       suppressWarnings()
 
@@ -284,13 +282,13 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
 
   # Run the model
   Cov_pred <- cov[!grepl("DEM", names(cov))]
-  pbapply::pboptions(type = "timer", use_lb = T, style = 1, char = "=")
+  pbapply::pboptions(type = "timer", use_lb = F, style = 1, char = "=")
   message("Analysis in progress. Please wait...")
   raster_Model <- pbapply::pblapply(Dates_extracted, function(date_P) {
     Cov_pred <- lapply(Cov_pred, function(x) x[[match(date_P, Dates_extracted)]])
     Cov_pred_combined <- c(Cov_pred, list(day_COV))
-    Cov_pred_combined <- rast(Cov_pred_combined)
-    ff = setdiff(names(dt_final), c("Cod", "Date", "var"))
+    Cov_pred_combined <- terra::rast(Cov_pred_combined)
+    ff = base::setdiff(names(dt_final), c("Cod", "Date", "var"))
     names(Cov_pred_combined) = ff
     RF_Modelmerge(date_P, Cov_pred_combined)
   })
@@ -302,14 +300,13 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   if (!is.null(mask)) {
     Ensamble <- terra::mask(Ensamble, mask)
   }
-
   ##############################################################################
   #                           Perform validation if established                #
   ##############################################################################
   if (training != 1 | !is.null(stat_validation)) {
     test_cords = data_val$test_cords
     test_data = data_val$test_data
-    final_results <- .validate(test_cords, test_data, crss = crs(Sample_lyrs),
+    final_results <- .validate(test_cords, test_data, crss = terra::crs(Sample_lyrs),
                               Ensamble, Rain_threshold = Rain_threshold)
   }
   ##############################################################################
@@ -321,6 +318,9 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
     name_saving <- paste0(name_save, ".nc")
     terra::writeCDF(Ensamble, filename = name_saving, overwrite=TRUE)
   }
+  ##############################################################################
+  #                                      Return                                #
+  ##############################################################################
   if (training != 1 | !is.null(stat_validation)) return(list(Ensamble = Ensamble, Validation = final_results))
   if (training == 1 & is.null(stat_validation)) return(Ensamble)
-}
+} # End Rfmerge function
