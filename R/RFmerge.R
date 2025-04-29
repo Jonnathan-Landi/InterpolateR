@@ -69,7 +69,7 @@
 #' # Load data from on-site observations
 #'  data("BD_Obs", package = "InterpolateR")
 #'  data("BD_Coord", package = "InterpolateR")
-#' 
+#'
 #' # Load the cov
 #' cov <- list(
 #'  MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
@@ -92,7 +92,6 @@
 #'
 #' # categorical metrics
 #' metrics_cat = model_RFmerge$Validation$categorical_metrics
-#'
 #' }
 #' @return If a value other than 1 is set (point to pixel validation is performed), a list containing two elemeentis returned:
 #'

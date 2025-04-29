@@ -101,7 +101,7 @@
 #'         ntree = 2000, seed = 123, training = 0.8,
 #'         Rain_threshold = list(no_rain = c(0, 1), light_rain = c(1, 5)),
 #'         method = "RQUANT", ratio = 10, save_model = FALSE, name_save = NULL)
-#' 
+#'
 #' # Visualize the results
 #' # Precipitation results within the study area
 #' modelo_rainfall = model$Ensamble
@@ -112,8 +112,6 @@
 #'
 #' # categorical metrics
 #' metrics_cat = model$Validation$categorical_metrics
-#'
-#' # Note: In the above example we used 80% of the data for training and 20% for # model validation.
 #' }
 #'
 #' @section Notes:

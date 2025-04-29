@@ -55,15 +55,16 @@
 #' data("BD_Coord", package = "InterpolateR")
 #'
 #' # Load the study area where the interpolation is performed.
-#' shapefile <- terra::vect(system.file("extdata", "study_area.shp", package = "InterpolateR"))
+#' shp_path = system.file("extdata", "study_area.shp", package = "InterpolateR")
+#' shapefile = terra::vect(shp_path)
 #'
 #' # Perform the interpolation
 #' Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile,
 #'   grid_resolution = 5, p = 2,
 #'   n_round = 1, training = 0.8, Rain_threshold = NULL,
-#'   stat_validation = NULL, save_model = FALSE, name_save = NULL
-#' )
+#'   stat_validation = NULL, save_model = FALSE, name_save = NULL)
 #' }
+#'
 #' @section Details:
 #'  Inverse distance weighting (IDW) works as a deterministic mathematical interpolator that assumes
 #'  that values closer to an unknown point are more closely related to it than those farther away. When using this method, sample points are weighted during the interpolation process so that the influence of a known point on the unknown point decreases as the distance between them increases.
