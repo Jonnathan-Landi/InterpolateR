@@ -25,20 +25,20 @@ testthat::skip_on_cran()
 
 # 1. Testing with validation ---------------------------------------------------
 testthat::test_that("RFplus returns SpatRaster without validation.", {
-  out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
+  out <- RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, ntree = 2000,
     seed = 123, method = "none", ratio = 10, training = 1, stat_validation = NULL,
     Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
-  
+
   testthat::expect_true(inherits(out, "SpatRaster"))
   testthat::expect_equal(terra::nlyr(out), length(unique(BD_Obs$Date)))
 })
 
 # 2. Testing with validation (random validation) --------------------------------
 testthat::test_that("RFplus returns SpatRaster with random validation.", {
-  out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
-    seed = 123, training = 0.8, method = "none", ratio = 10, stat_validation = NULL, 
+  out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000, wet.day = 0.1,
+    seed = 123, training = 0.8, method = "none", ratio = 10, stat_validation = NULL,
     Rain_threshold = Rain_threshold, save_model = FALSE, name_save = NULL)
-  
+
   testthat::expect_true(inherits(out$Ensamble, "SpatRaster"))
   testthat::expect_equal(terra::nlyr(out$Ensamble), length(unique(BD_Obs$Date)))
   testthat::expect_true(inherits(out$Validation$gof, "data.table"))
@@ -50,7 +50,7 @@ testthat::test_that("RFplus returns SpatRaster with manual validation.", {
   out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
     seed = 123, training = 1, method = "none", ratio = 10, stat_validation = "M004",
     Rain_threshold = Rain_threshold, save_model = FALSE, name_save = NULL)
-  
+
   testthat::expect_true(inherits(out$Ensamble, "SpatRaster"))
   testthat::expect_equal(terra::nlyr(out$Ensamble), length(unique(BD_Obs$Date)))
   testthat::expect_true(inherits(out$Validation$gof, "data.table"))
@@ -60,9 +60,9 @@ testthat::test_that("RFplus returns SpatRaster with manual validation.", {
 # 4. Testing  RFplus returns SpatRaster with random validation without ---------
 testthat::test_that("RFplus returns SpatRaster with manual validation.", {
   out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
-    seed = 123, training = 1, method = "none", ratio = 10, stat_validation = "M004", 
+    seed = 123, training = 1, method = "none", ratio = 10, stat_validation = "M004",
     Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
-  
+
   testthat::expect_true(inherits(out$Ensamble, "SpatRaster"))
   testthat::expect_equal(terra::nlyr(out$Ensamble), length(unique(BD_Obs$Date)))
   testthat::expect_true(inherits(out$Validation, "data.table"))
@@ -71,9 +71,9 @@ testthat::test_that("RFplus returns SpatRaster with manual validation.", {
 # 5. Testing  RFplus with method QUANT ---------
 testthat::test_that("RFplus uses the QUANT Method.", {
   out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
-    seed = 123, training = 1, method = "QUANT", ratio = 10, stat_validation = NULL, 
+    seed = 123, training = 1, method = "QUANT", ratio = 10, stat_validation = NULL,
     Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
-  
+
   testthat::expect_true(inherits(out, "SpatRaster"))
   testthat::expect_equal(terra::nlyr(out), length(unique(BD_Obs$Date)))
 })
@@ -81,9 +81,9 @@ testthat::test_that("RFplus uses the QUANT Method.", {
 # 6. Testing  RFplus with method RQUANT ---------
 testthat::test_that("RFplus uses the QUANT Method.", {
   out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
-    seed = 123, training = 1, method = "RQUANT", ratio = 10, stat_validation = NULL, 
+    seed = 123, training = 1, method = "RQUANT", ratio = 10, stat_validation = NULL,
     Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
-  
+
   testthat::expect_true(inherits(out, "SpatRaster"))
   testthat::expect_equal(terra::nlyr(out), length(unique(BD_Obs$Date)))
 })
@@ -95,7 +95,7 @@ testthat::test_that("The Covariates must be a list.", {
   bad_Covariates <- data.frame(x = 1:10, y = rnorm(10))
   testthat::expect_error(
     RFplus(BD_Obs, BD_Coord, bad_Covariates,  n_round = 1, ntree = 2000,
-      seed = 123, training = 1, method = "none", ratio = 10, stat_validation = NULL, 
+      seed = 123, training = 1, method = "none", ratio = 10, stat_validation = NULL,
       Rain_threshold = NULL, save_model = FALSE, name_save = NULL),
     regexp = "Covariates must be a list\\.$"
     )
@@ -107,7 +107,7 @@ testthat::test_that("The Covariates must be of type SpatRaster.", {
   bad_Covariates$Test <- data.frame(x = 1:10, y = rnorm(10))
   testthat::expect_error(
     RFplus(BD_Obs, BD_Coord, bad_Covariates, n_round = 1, ntree = 2000,
-      seed = 123, training = 1, method = "none", ratio = 10, stat_validation = NULL, 
+      seed = 123, training = 1, method = "none", ratio = 10, stat_validation = NULL,
       Rain_threshold = NULL, save_model = FALSE, name_save = NULL),
     regexp = "The covariates must be of type SpatRaster\\.$"
     )
@@ -165,7 +165,7 @@ testthat::test_that("names of the coordinates do not appear in the observed data
   bad_Cords[3,1] = "yy"
   testthat::expect_error(
     RFplus(BD_Obs, bad_Cords, Covariates, n_round = 1, ntree = 2000,
-      seed = 123,  training = 1, method = "none", ratio = 10, stat_validation = NULL, 
+      seed = 123,  training = 1, method = "none", ratio = 10, stat_validation = NULL,
       Rain_threshold = NULL, save_model = FALSE, name_save = NULL),
     regexp = "The names of the coordinates do not appear in the observed data.$"
     )
@@ -223,7 +223,7 @@ testthat::test_that("RFplus saves model when save_model = TRUE", {
   testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
 })
 
-# 15. "Save the model must be a logical value." (default name) " ------------------
+# 15. "Save the model must be a logical value." (default name) " ---------------
 testthat::test_that("RFplus saves model when save_model = TRUE (default name)", {
   temp_dir <- tempdir()
   withr::local_dir(temp_dir)
@@ -240,4 +240,12 @@ testthat::test_that("RFplus saves model when save_model = TRUE (default name)", 
   testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
 })
 
-
+# 16. Test adicional para modulo de conexion
+testthat::test_that("The training parameter must be between 0 and 1.", {
+  testthat::expect_error(
+    RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, ntree = 2000,
+           seed = 123, training = 2, stat_validation = NULL,
+           Rain_threshold = NULL, save_model = FALSE, name_save = NULL),
+    regexp = "The training parameter must be between 0 and 1\\.$"
+  )
+})
