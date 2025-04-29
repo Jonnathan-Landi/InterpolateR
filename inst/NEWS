@@ -5,6 +5,7 @@
 
 ### New Features
 
+-   We added new goodness-of-fit metrics, including: Mean Squared Error (MSE), pearson's Correlation, Coefficient of Determination (R-squared)
 -   We performed a refactoring of the project for its future maintenance and addition of new functionalities.
 -   We have removed hydroGOF dependencies for the calculation of goodness-of-fit metrics. The metrics will now be hosted as internal functions.
 -   We have added a new function to create a file similar to BD_Obs from several csv files.
