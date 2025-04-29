@@ -3,7 +3,7 @@ testthat::test_that("IDW interpolation works correctly", {
   data("BD_Coord", package = "InterpolateR")
 
   # Load the study area where the interpolation will be performed.
-  shapefile <- terra::vect(system.file("extdata/study_area.shp", package = "InterpolateR"))
+  shapefile <- terra::vect(system.file("extdata", "study_area.shp", package = "InterpolateR"))
 
 
   # validation with Rain
