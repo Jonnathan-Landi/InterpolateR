@@ -1,5 +1,6 @@
 # Data used for testing
-# Date: 2025-04-29
+# Date of test creation: 2025-04-28
+# Test update date: 2025-04-29
 data("BD_Obs",   package = "InterpolateR")
 data("BD_Coord", package = "InterpolateR")
 shapefile <- terra::vect(system.file("extdata", "study_area.shp", package = "InterpolateR"))
@@ -11,7 +12,7 @@ Rain_threshold <- list(
   extremely_rain= c(40, Inf)
 )
 
-skip_on_cran()
+testthat::skip_on_cran()
 
 # 1. Testing with validation ---------------------------------------------------
 testthat::test_that("IDW returns SpatRaster with full validation.", {
@@ -110,6 +111,25 @@ testthat::test_that("IDW saves model when save_model = TRUE", {
     "Model saved successfully"
   )
   expected_file <- file.path(temp_dir, paste0(custom_name, ".nc"))
+  testthat::expect_true(file.exists(expected_file), info = expected_file)
+  testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
+})
+
+# 8. "Save the model must be a logical value (default name) " ------------------
+testthat::test_that("IDW saves model when save_model = TRUE (default name)", {
+  temp_dir <- tempdir()
+  withr::local_dir(temp_dir)
+  expect_message(
+    out <- IDW(
+      BD_Obs, BD_Coord, shapefile,
+      grid_resolution = 5, p = 2,
+      n_round = 1, training = 1,
+      Rain_threshold = NULL, stat_validation = NULL,
+      save_model = TRUE, name_save = NULL
+    ),
+    "Model saved successfully"
+  )
+  expected_file <- file.path(temp_dir, "Model_IDW.nc")
   testthat::expect_true(file.exists(expected_file), info = expected_file)
   testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
 })
