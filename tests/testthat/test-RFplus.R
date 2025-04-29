@@ -1,224 +1,243 @@
-testthat::test_that("RFplus works correctly", {
-  skip_on_cran()
+# Data used for testing RFplus
+# Date of test creation: 2025-04-29
+# Test update date: 2025-04-29
 
-  data("BD_Obs", package = "InterpolateR")
-  data("BD_Coord", package = "InterpolateR")
+# Data input
+data("BD_Obs", package = "InterpolateR")
+data("BD_Coord", package = "InterpolateR")
 
-  # Load the covariates
-  Covariates <- list(
-    MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
-    CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
-    DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
-  )
+# Load the Covariatesariates
+Covariates <- list(
+  MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
+  CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
+  DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
+)
 
-  # validation with Rain
-  Rain_threshold = list(
-    no_rain = c(0, 1),
-    light_rain = c(1, 5),
-    moderate_rain = c(5, 20),
-    heavy_rain = c(20, 40),
-    extremely_rain= c(40, Inf)
-  )
-  ##################################################################################################
-  # Testing with validation
-  # Apply the RFplus with method = "none"
-  model_none = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
-                 ntree = 2000, seed = 123, training = 1, stat_validation = c("M004"),
-                 Rain_threshold = Rain_threshold, method = "none",
-                 ratio = 15, save_model = FALSE, name_save = NULL)
+Rain_threshold = list(
+  no_rain = c(0, 1),
+  light_rain = c(1, 5),
+  moderate_rain = c(5, 20),
+  heavy_rain = c(20, 40),
+  extremely_rain= c(40, Inf)
+)
 
-  # Apply the method RQUANT
-  model_Rquant = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
-                 ntree = 2000, seed = 123, training = 1, stat_validation = c("M004"),
-                 Rain_threshold = Rain_threshold, method = "RQUANT",
-                 ratio = 15, save_model = FALSE, name_save = NULL)
+testthat::skip_on_cran()
 
-  # Apply the method QUANT
-  model_QUANT = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
-                 ntree = 2000, seed = 123, training = 1, stat_validation = c("M004"),
-                 Rain_threshold = Rain_threshold, method = "QUANT",
-                 ratio = 15, save_model = FALSE, name_save = NULL)
-  ##################################################################################################
-  # Check that the result is a raster object
-  testthat::expect_true(inherits(model_none$Ensamble, "SpatRaster"))
-  testthat::expect_true(inherits(model_Rquant$Ensamble, "SpatRaster"))
-  testthat::expect_true(inherits(model_QUANT$Ensamble, "SpatRaster"))
-
-  # Check that the number of layers in the raster object is equal to the number of unique dates
-  testthat::expect_equal(terra::nlyr(model_none$Ensamble), length(unique(BD_Obs$Date)))
-  testthat::expect_equal(terra::nlyr(model_Rquant$Ensamble), length(unique(BD_Obs$Date)))
-  testthat::expect_equal(terra::nlyr(model_QUANT$Ensamble), length(unique(BD_Obs$Date)))
-  ##################################################################################################
-  # Testing without validation
-  model_sn = RFplus(BD_Obs, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
-                 ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-                 Rain_threshold = NULL, method = "none",
-                 ratio = 15, save_model = FALSE, name_save = NULL)
-
-  # Check that the result is a raster object
-  testthat::expect_true(inherits(model_sn, "SpatRaster"))
-  # Check that the number of layers in the raster object is equal to the number of unique dates
-  testthat::expect_equal(terra::nlyr(model_sn), length(unique(BD_Obs$Date)))
-
-  ##############################################################################
-  #     Check that the algorithm stops when the input data is not correct.     #
-  ##############################################################################
-  # Verify that covariates is a list
-  Cov_df <- data.frame(x = 1:10, y = rnorm(10))
-  resultado <- tryCatch({
-    RFplus(BD_Obs, BD_Coord, Cov_df, n_round = 1, wet.day = 0.1,
-           ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-           Rain_threshold = NULL, method = "none",
-           ratio = 15, save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Correct test: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
-
-  # Verify that the covariates are type SpatRaster
-  cov = list(
-    MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
-    CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
-    DEM = data.frame(x = 1:10, y = rnorm(10))
-  )
-
-  resultado <- tryCatch({
-    RFplus(BD_Obs, BD_Coord, cov, n_round = 1, wet.day = 0.1,
-           ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-           Rain_threshold = NULL, method = "none",
-           ratio = 15, save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Correct test: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
-
-  # Verify the BD_Obs is data.table
-  BD = as.matrix(BD_Obs)
-  cord = as.matrix(BD_Coord)
-
-  resultado <- tryCatch({
-    RFplus(BD, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
-           ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-           Rain_threshold = NULL, method = "none",
-           ratio = 15, save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Correct test: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
-
-  # Verify the BD_Obs is data.table or data.frame
-  resultado <- tryCatch({
-    RFplus(BD_Obs, cord, Covariates, n_round = 1, wet.day = 0.1,
-           ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-           Rain_threshold = NULL, method = "none",
-           ratio = 15, save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Correct test: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
-
-  # Verify that all dates have at least one entry recorded
-  BD_na = BD_Obs
-  BD_na[1, 2:11] <- NA
-  resultado <- tryCatch({
-    RFplus(BD_na, BD_Coord, Covariates, n_round = 1, wet.day = 0.1,
-           ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-           Rain_threshold = NULL, method = "none",
-           ratio = 15, save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Correct test: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
-
-  # Check that the coordinate names appear in the observed data
-  bd_2 = BD_Coord
-  bd_2[3,1] <- "aa"
-  resultado <- tryCatch({
-    RFplus(BD_Obs, bd_2, Covariates, n_round = 1, wet.day = 0.1,
-           ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-           Rain_threshold = NULL, method = "none",
-           ratio = 15, save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Correct test: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
-
-  # Check if there is a DEM layer
-  COV_2 = list(
-    MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
-    CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
-    DEM = rep(terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR")),2)
-  )
-
-  resultado <- tryCatch({
-    RFplus(BD_Obs, BD_Coord, COV_2, n_round = 1, wet.day = 0.1,
-           ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-           Rain_threshold = NULL, method = "none",
-           ratio = 15, save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Correct test: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
-
-  # Verify the extent of covariates
-  Cov_4 = list(
-    MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
-    CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
-    DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
-  )
-  terra::ext(Cov_4$MSWEP) <- terra::ext(Cov_4$MSWEP) * 2
-  resultado <- tryCatch({
-    RFplus(BD_Obs, BD_Coord, Cov_4, n_round = 1, wet.day = 0.1,
-           ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-           Rain_threshold = NULL, method = "none",
-           ratio = 15, save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Correct test: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
-
-  # Verify the crc of covariates
-  Cov_5 = list(
-    MSWEP = terra::rast(system.file("extdata/MSWEP.nc", package = "InterpolateR")),
-    CHIRPS = terra::rast(system.file("extdata/CHIRPS.nc", package = "InterpolateR")),
-    DEM = terra::rast(system.file("extdata/DEM.nc", package = "InterpolateR"))
-  )
-  terra::crs(Cov_5$MSWEP) <- "EPSG:4326"
-  resultado <- tryCatch({
-    RFplus(BD_Obs, BD_Coord, Cov_5, n_round = 1, wet.day = 0.1,
-           ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-           Rain_threshold = NULL, method = "none",
-           ratio = 15, save_model = FALSE, name_save = NULL)
-  }, error = function(e) {
-    message("Correct test: ", e$message)
-    return(NULL)
-  }, warning = function(w) {
-    message("warning: ", w$message)
-    return(NULL)
-  })
+# 1. Testing with validation ---------------------------------------------------
+testthat::test_that("RFplus returns SpatRaster without validation.", {
+  out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
+    seed = 123, method = "none", ratio = 10, training = 1, stat_validation = NULL,
+    Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
+  
+  testthat::expect_true(inherits(out, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out), length(unique(BD_Obs$Date)))
 })
+
+# 2. Testing with validation (random validation) --------------------------------
+testthat::test_that("RFplus returns SpatRaster with random validation.", {
+  out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
+    seed = 123, training = 0.8, method = "none", ratio = 10, stat_validation = NULL, 
+    Rain_threshold = Rain_threshold, save_model = FALSE, name_save = NULL)
+  
+  testthat::expect_true(inherits(out$Ensamble, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out$Ensamble), length(unique(BD_Obs$Date)))
+  testthat::expect_true(inherits(out$Validation$gof, "data.table"))
+  testthat::expect_true(inherits(out$Validation$categorical_metrics, "data.table"))
+})
+
+# 3. Testing with validation (manual validation) --------------------------------
+testthat::test_that("RFplus returns SpatRaster with manual validation.", {
+  out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
+    seed = 123, training = 1, method = "none", ratio = 10, stat_validation = "M004",
+    Rain_threshold = Rain_threshold, save_model = FALSE, name_save = NULL)
+  
+  testthat::expect_true(inherits(out$Ensamble, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out$Ensamble), length(unique(BD_Obs$Date)))
+  testthat::expect_true(inherits(out$Validation$gof, "data.table"))
+  testthat::expect_true(inherits(out$Validation$categorical_metrics, "data.table"))
+})
+
+# 4. Testing  RFplus returns SpatRaster with random validation without ---------
+testthat::test_that("RFplus returns SpatRaster with manual validation.", {
+  out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
+    seed = 123, training = 1, method = "none", ratio = 10, stat_validation = "M004", 
+    Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
+  
+  testthat::expect_true(inherits(out$Ensamble, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out$Ensamble), length(unique(BD_Obs$Date)))
+  testthat::expect_true(inherits(out$Validation, "data.table"))
+})
+
+# 5. Testing  RFplus with method QUANT ---------
+testthat::test_that("RFplus uses the QUANT Method.", {
+  out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
+    seed = 123, training = 1, method = "QUANT", ratio = 10, stat_validation = NULL, 
+    Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
+  
+  testthat::expect_true(inherits(out, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out), length(unique(BD_Obs$Date)))
+})
+
+# 6. Testing  RFplus with method RQUANT ---------
+testthat::test_that("RFplus uses the QUANT Method.", {
+  out <- RFplus(BD_Obs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
+    seed = 123, training = 1, method = "RQUANT", ratio = 10, stat_validation = NULL, 
+    Rain_threshold = NULL, save_model = FALSE, name_save = NULL)
+  
+  testthat::expect_true(inherits(out, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out), length(unique(BD_Obs$Date)))
+})
+##############################################################################
+#     Check that the algorithm stops when the input data is not correct.     #
+##############################################################################
+# 5. Testing error with The Covariates must be a list.
+testthat::test_that("The Covariates must be a list.", {
+  bad_Covariates <- data.frame(x = 1:10, y = rnorm(10))
+  testthat::expect_error(
+    RFplus(BD_Obs, BD_Coord, bad_Covariates,  n_round = 1, ntree = 2000,
+      seed = 123, training = 1, method = "none", ratio = 10, stat_validation = NULL, 
+      Rain_threshold = NULL, save_model = FALSE, name_save = NULL),
+    regexp = "Covariates must be a list\\.$"
+    )
+  })
+
+# 6. The Covariates must be of type SpatRaster.
+testthat::test_that("The Covariates must be of type SpatRaster.", {
+  bad_Covariates <- Covariates
+  bad_Covariates$Test <- data.frame(x = 1:10, y = rnorm(10))
+  testthat::expect_error(
+    RFplus(BD_Obs, BD_Coord, bad_Covariates, n_round = 1, ntree = 2000,
+      seed = 123, training = 1, method = "none", ratio = 10, stat_validation = NULL, 
+      Rain_threshold = NULL, save_model = FALSE, name_save = NULL),
+    regexp = "The covariates must be of type SpatRaster\\.$"
+    )
+})
+
+# 7. The extension of the Covariates are different (all extensions should be similar)
+testthat::test_that("The extension of the Covariates are different.", {
+  bad_Covariates <- Covariates
+  terra::ext(bad_Covariates$MSWEP) = terra::ext(bad_Covariates$MSWEP) * 2
+  testthat::expect_error(
+    RFplus(BD_Obs, BD_Coord, bad_Covariates,  n_round = 1, ntree = 2000,
+      seed = 123, training = 1, method = "none", ratio = 10, stat_validation = NULL, Rain_threshold = NULL,
+      save_model = FALSE, name_save = NULL),
+    regexp = "^The extension of the covariates are different \\(all extensions should be similar\\)\\.$"
+    )
+})
+
+# 8. "The crs of the Covariates are different (all crs should be similar).
+testthat::test_that("The crs of the Covariates are different.", {
+  bad_Covariates <- Covariates
+  terra::crs(bad_Covariates$MSWEP) = "EPSG:4326"
+  testthat::expect_error(
+    RFplus(BD_Obs, BD_Coord, bad_Covariates,  n_round = 1, ntree = 2000,
+      seed = 123,  training = 1, method = "none", ratio = 10, stat_validation = NULL,
+      Rain_threshold = NULL, save_model = FALSE, name_save = NULL),
+    regexp = "^The crs of the covariates are different \\(all crs should be similar\\)\\.$"
+    )
+})
+
+# 9. "BD_Obs must be a 'data.table' or a 'data.frame'."
+testthat::test_that("BD_Obs must be a 'data.table' or a 'data.frame.", {
+  bad_BDObs = as.matrix(BD_Obs)
+  testthat::expect_error(
+    RFplus(bad_BDObs, BD_Coord, Covariates,  n_round = 1, ntree = 2000,
+      seed = 123, training = 1, method = "none", ratio = 10, stat_validation = NULL,
+      Rain_threshold = NULL, save_model = FALSE, name_save = NULL),
+    regexp = "BD_Obs must be a 'data.table' or a 'data.frame'.$"
+    )
+})
+
+# 10. BD_Coord must be a 'data.table' or a 'data.frame'."
+testthat::test_that("BD_Coord must be a 'data.table' or a 'data.frame'.", {
+  bad_BD_Coord = as.matrix(BD_Coord)
+  testthat::expect_error(
+    RFplus(BD_Obs, bad_BD_Coord, Covariates,  n_round = 1, ntree = 2000,
+      seed = 123,  training = 1, method = "none", ratio = 10, stat_validation = NULL,
+      Rain_threshold = NULL, save_model = FALSE, name_save = NULL),
+    regexp = "BD_Coord must be a 'data.table' or a 'data.frame'.$"
+    )
+})
+
+# 11. "The names of the coordinates do not appear in the observed data."
+testthat::test_that("names of the coordinates do not appear in the observed data.", {
+  bad_Cords = BD_Coord
+  bad_Cords[3,1] = "yy"
+  testthat::expect_error(
+    RFplus(BD_Obs, bad_Cords, Covariates, n_round = 1, ntree = 2000,
+      seed = 123,  training = 1, method = "none", ratio = 10, stat_validation = NULL, 
+      Rain_threshold = NULL, save_model = FALSE, name_save = NULL),
+    regexp = "The names of the coordinates do not appear in the observed data.$"
+    )
+})
+
+# 12. A single layer covariate was not found. Possibly the DEM was not entered..
+testthat::test_that("Single layer covariate was not found.", {
+  bad_Covs = Covariates
+  bad_Covs$DEM = c(bad_Covs$DEM, bad_Covs$DEM)
+  testthat::expect_error(
+    RFplus(BD_Obs, BD_Coord, bad_Covs, n_round = 1, ntree = 2000, method = "none", ratio = 10,
+      seed = 123, training = 1, stat_validation = NULL, Rain_threshold = NULL,
+      save_model = FALSE, name_save = NULL),
+    regexp = "A single layer covariate was not found. Possibly the DEM was not entered.$"
+    )
+})
+
+# 13. Verify that all dates have at least one entry recorded
+testthat::test_that("Error when BD_Obs has rows with all NA values (except Date)", {
+  # Simular BD_Obs con una fila completamente NA (menos la fecha)
+  BD_Obs <- data.table::data.table(
+    Date = as.Date(c("2020-01-01", "2020-01-02")),
+    Station1 = c(1.2, NA),
+    Station2 = c(3.4, NA)
+  )
+
+  BD_Coord <- data.table::data.table(ID = c("Station1", "Station2"), x = c(1, 2), y = c(3, 4))
+
+  # Crear una Covariatesariables falsas
+  Covariates <- list(dummy = terra::rast(nrows = 2, ncols = 2, vals = runif(4)))
+  testthat::expect_error(
+    RFplus(BD_Obs, BD_Coord, Covariates,
+            n_round = 1, ntree = 10, seed = 123, training = 1,
+            stat_validation = NULL, Rain_threshold = NULL, method = "none", ratio = 10,
+            save_model = FALSE, name_save = NULL),
+    regexp = "No data was found for the dates: 2020-01-02"
+  )
+})
+
+# 14. "Save the model must be a logical value."
+testthat::test_that("RFplus saves model when save_model = TRUE", {
+  temp_dir <- tempdir()
+  withr::local_dir(temp_dir)
+  custom_name <- "test_model_RFplus"
+  expect_message(
+    out <- RFplus(BD_Obs, BD_Coord, Covariates, method = "none", ratio = 10,
+      n_round = 1, ntree = 10, seed = 123, training = 1,
+      stat_validation = NULL, Rain_threshold = NULL,
+      save_model = T, name_save = custom_name
+  ),
+  "Model saved successfully"
+)
+  expected_file <- file.path(temp_dir, paste0(custom_name, ".nc"))
+  testthat::expect_true(file.exists(expected_file), info = expected_file)
+  testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
+})
+
+# 15. "Save the model must be a logical value." (default name) " ------------------
+testthat::test_that("RFplus saves model when save_model = TRUE (default name)", {
+  temp_dir <- tempdir()
+  withr::local_dir(temp_dir)
+  expect_message(
+    out <- RFplus(BD_Obs, BD_Coord, Covariates, method = "none", ratio = 10,
+      n_round = 1, ntree = 10, seed = 123, training = 1,
+      stat_validation = NULL, Rain_threshold = NULL,
+      save_model = T, name_save = NULL
+  ),
+    "Model saved successfully"
+  )
+  expected_file <- file.path(temp_dir, "Model_RFplus.nc")
+  testthat::expect_true(file.exists(expected_file), info = expected_file)
+  testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
+})
+
 
