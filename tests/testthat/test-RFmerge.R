@@ -110,7 +110,7 @@ testthat::test_that("The extension of the cov are different.", {
 })
 
 # 8. "The crs of the cov are different (all crs should be similar).
-testthat::test_that("The extension of the cov are different.", {
+testthat::test_that("The crs of the cov are different.", {
   bad_cov <- cov
   terra::crs(bad_cov$MSWEP) = "EPSG:4326"
   testthat::expect_error(
@@ -122,7 +122,7 @@ testthat::test_that("The extension of the cov are different.", {
 })
 
 # 9. "BD_Obs must be a 'data.table' or a 'data.frame'."
-testthat::test_that("The extension of the cov are different.", {
+testthat::test_that("BD_Obs must be a 'data.table' or a 'data.frame'.", {
   bad_BDObs = as.matrix(BD_Obs)
   testthat::expect_error(
     RFmerge(bad_BDObs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
@@ -133,7 +133,7 @@ testthat::test_that("The extension of the cov are different.", {
 })
 
 # 10. BD_Coord must be a 'data.table' or a 'data.frame'."
-testthat::test_that("The extension of the cov are different.", {
+testthat::test_that("BD_Coord must be a 'data.table' or a 'data.frame'.", {
   bad_BD_Coord = as.matrix(BD_Coord)
   testthat::expect_error(
     RFmerge(BD_Obs, bad_BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
@@ -144,7 +144,7 @@ testthat::test_that("The extension of the cov are different.", {
 })
 
 # 11. "The names of the coordinates do not appear in the observed data."
-testthat::test_that("The extension of the cov are different.", {
+testthat::test_that("names of the coordinates do not appear in the observed data.", {
   bad_Cords = BD_Coord
   bad_Cords[3,1] = "yy"
   testthat::expect_error(
@@ -156,7 +156,7 @@ testthat::test_that("The extension of the cov are different.", {
 })
 
 # 12. mask must be a 'SpatVector' object.
-testthat::test_that("The extension of the cov are different.", {
+testthat::test_that("mask must be a 'SpatVector'.", {
   bad_shp = BD_Obs
   testthat::expect_error(
     RFmerge(BD_Obs, BD_Coord, cov, mask = bad_shp, n_round = 1, ntree = 2000,
@@ -220,9 +220,20 @@ testthat::test_that("RFmerge saves model when save_model = TRUE (default name)",
   ),
     "Model saved successfully"
   )
-  expected_file <- file.path(temp_dir, "Model_IDW.nc")
+  expected_file <- file.path(temp_dir, "Model_RFmerge.nc")
   testthat::expect_true(file.exists(expected_file), info = expected_file)
   testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
 })
 
-
+# 15. A single layer covariate was not found. Possibly the DEM was not entered..
+testthat::test_that("Single layer covariate was not found.", {
+  bad_Covs = cov
+  bad_Covs$DEM = c(bad_Covs$DEM, bad_Covs$DEM)
+  testthat::expect_error(
+    RFmerge(BD_Obs, BD_Coord, bad_Covs, mask = shapefile,
+      n_round = 1, ntree = 10, seed = 123, training = 1,
+      stat_validation = NULL, Rain_threshold = NULL,
+      save_model = T, name_save = NULL),
+    regexp = "A single layer covariate was not found. Possibly the DEM was not entered.$"
+    )
+})
