@@ -93,3 +93,23 @@ testthat::test_that("Error if coordinates names do not appear in observed data."
     regexp = "The names of the coordinates do not appear in the observed data\\.$"
   )
 })
+
+# 7. "Save the model must be a logical value." ---------------------------------
+testthat::test_that("IDW saves model when save_model = TRUE", {
+  temp_dir <- tempdir()
+  withr::local_dir(temp_dir)
+  custom_name <- "test_model_IDW"
+  expect_message(
+    out <- IDW(
+      BD_Obs, BD_Coord, shapefile,
+      grid_resolution = 5, p = 2,
+      n_round = 1, training = 1,
+      Rain_threshold = NULL, stat_validation = NULL,
+      save_model = TRUE, name_save = custom_name
+    ),
+    "Model saved successfully"
+  )
+  expected_file <- file.path(temp_dir, paste0(custom_name, ".nc"))
+  testthat::expect_true(file.exists(expected_file), info = expected_file)
+  testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
+})
