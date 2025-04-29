@@ -1,6 +1,7 @@
 # Data used for testing
 # Date of test creation: 2025-04-28
 # Test update date: 2025-04-29
+
 data("BD_Obs",   package = "InterpolateR")
 data("BD_Coord", package = "InterpolateR")
 shapefile <- terra::vect(system.file("extdata", "study_area.shp", package = "InterpolateR"))
