@@ -158,11 +158,11 @@ Interpolated_Cressman <- Cressman(BD_Obs, BD_Coord, shapefile, grid_resolution =
                                   stat_validation = "M001", Rain_threshold = NULL,
                                  save_model = FALSE)
 # Results ("Ensamble with 10 km radius")
-Radius_10 = Interpolated_Cressman$Ensamble
+Radius_10 = Interpolated_Cressman$Ensamble$`10000`
 
 # Validation statistics
-# Validation results with a 20 km radius
-Validation_results_20 = Interpolated_Cressman$Validation
+# Validation results with a 10 km radius
+Validation_results_10 = Interpolated_Cressman$Validation$`10000`
 }
 }
 \references{
