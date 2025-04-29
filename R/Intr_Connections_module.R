@@ -1,7 +1,7 @@
 # This script will work as a connection between the exported and internal functions.
 
 # This function prepares the files for validation
-#' @importFrom data.table %between% 
+#' @importFrom data.table %between%
 .select_data <-  function(BD_Obs, BD_Coord, training, stat_validation = NULL) {
   if (is.null(stat_validation)) {
     if (!(training %between% c(0, 1))) stop("The training parameter must be between 0 and 1.")
@@ -34,12 +34,15 @@ metrics <- function(data, Rain_threshold) {
   #                       metrics of goodness of fit                           #
   ##############################################################################
   gof = data.table(
-    MAE = round(.mae(data$Sim, data$Obs), 3),
-    CC = round(.rspearman(data$Sim, data$Obs), 3),
-    RMSE = round(.rmse(data$Sim, data$Obs), 3),
-    KGE = round(.kge(data$Sim, data$Obs), 3),
-    NSE = round(.nse(data$Sim, data$Obs), 3),
-    PBIAS = round(.pbias(data$Sim, data$Obs), 3)
+    MAE = round(.mae(data$Sim, data$Obs), 2),
+    MSE = round(.mse(data$Sim, data$Obs), 2),
+    RMSE = round(.rmse(data$Sim, data$Obs), 2),
+    `PBIAS %` = round(.pbias(data$Sim, data$Obs), 2),
+    NSE = round(.nse(data$Sim, data$Obs), 2),
+    R2 = round(.rsquared(data$Sim, data$Obs), 2),
+    rSpearman = round(.rspearman(data$Sim, data$Obs), 2),
+    rPearson = round(.rpearson(data$Sim, data$Obs), 2),
+    KGE = round(.kge(data$Sim, data$Obs), 2)
   )
   ##############################################################################
   #                       metrics of categorical                               #
