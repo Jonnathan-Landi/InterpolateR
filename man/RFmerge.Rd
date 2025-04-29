@@ -162,7 +162,6 @@ metrics_gof = model_RFmerge$Validation$gof
 
 # categorical metrics
 metrics_cat = model_RFmerge$Validation$categorical_metrics
-
 }
 }
 \references{

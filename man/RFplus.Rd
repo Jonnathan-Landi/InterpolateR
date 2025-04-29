@@ -184,8 +184,6 @@ metrics_gof = model$Validation$gof
 
 # categorical metrics
 metrics_cat = model$Validation$categorical_metrics
-
-# Note: In the above example we used 80\% of the data for training and 20\% for # model validation.
 }
 
 }

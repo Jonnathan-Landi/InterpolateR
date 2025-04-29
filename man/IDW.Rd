@@ -137,15 +137,16 @@ data("BD_Obs", package = "InterpolateR")
 data("BD_Coord", package = "InterpolateR")
 
 # Load the study area where the interpolation is performed.
-shapefile <- terra::vect(system.file("extdata", "study_area.shp", package = "InterpolateR"))
+shp_path = system.file("extdata", "study_area.shp", package = "InterpolateR")
+shapefile = terra::vect(shp_path)
 
 # Perform the interpolation
 Interpolated_data <- IDW(BD_Obs, BD_Coord, shapefile,
   grid_resolution = 5, p = 2,
   n_round = 1, training = 0.8, Rain_threshold = NULL,
-  stat_validation = NULL, save_model = FALSE, name_save = NULL
-)
+  stat_validation = NULL, save_model = FALSE, name_save = NULL)
 }
+
 }
 \references{
 Shepard, D. (1968) A two-dimensional interpolation function for irregularly-spaced data. Proceedings of the 1968 ACM National Conference, 1968, pages 517--524. DOI: 10.1145/800186.810616

@@ -150,22 +150,19 @@ the cut-off radius.
  data("BD_Coord", package = "InterpolateR")
 
 # Load the study area where the interpolation is performed.
- shapefile <- terra::vect(system.file("extdata/study_area.shp", package = "InterpolateR"))
-
+shp_path = system.file("extdata", "study_area.shp", package = "InterpolateR")
+shapefile = terra::vect(shp_path)
  # Perform the interpolation
- Interpolated_Cressman <- Cressman(BD_Obs, BD_Coord, shapefile, grid_resolution = 5,
-                                   search_radius = c(20,10), training = 1,
-                                   stat_validation = "M001", Rain_threshold = NULL,
-                                   save_model = FALSE)
-# Results
-Radius_20 = Interpolated_Cressman$Ensamble[[1]] # Interpolated data with a 20 km radius
-Radius_10 = Interpolated_Cressman$Ensamble[[2]] # Interpolated data with a 10 km radius
+Interpolated_Cressman <- Cressman(BD_Obs, BD_Coord, shapefile, grid_resolution = 5,
+                                  search_radius = 10, training = 1,
+                                  stat_validation = "M001", Rain_threshold = NULL,
+                                 save_model = FALSE)
+# Results ("Ensamble with 10 km radius")
+Radius_10 = Interpolated_Cressman$Ensamble
 
 # Validation statistics
 # Validation results with a 20 km radius
-Validation_results_20 = Interpolated_Cressman$Validation[[1]]
-# Validation results with a 10 km radius
-Validation_results_10 = Interpolated_Cressman$Validation[[2]]
+Validation_results_20 = Interpolated_Cressman$Validation
 }
 }
 \references{
