@@ -175,11 +175,11 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
   #                    Check input data from on-site stations                  #
   ##############################################################################
   # Verify the BD_Obs is data.table
-  if (!inherits(BD_Obs, "data.table")) stop("The data of the on-site stations should be a data.table.")
+  if (!inherits(BD_Obs, c("data.table", "data.frame"))) stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
   names(BD_Obs)[1] <- "Date"
 
   # Verify the columns of BD_Coord
-  if (!inherits(BD_Coord, "data.table")) stop("The coordinate data of the on-site stations must be a data.table.")
+  if (!inherits(BD_Coord, c("data.table", "data.frame"))) stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
 
   # Verify that all dates have at least one entry recorded
   Dates_NA <- BD_Obs[apply(BD_Obs[, .SD, .SDcols = -1], 1, function(x) all(is.na(x))), Date]

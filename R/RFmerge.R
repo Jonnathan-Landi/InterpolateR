@@ -161,9 +161,6 @@ RFmerge = function(BD_Obs, BD_Coord, cov, mask = NULL, n_round = NULL, ntree = 2
   # Verify that all dates have at least one entry recorded
   Dates_NA <- BD_Obs[apply(BD_Obs[, .SD, .SDcols = -1], 1, function(x) all(is.na(x))), Date]
   if (length(Dates_NA) > 0) stop(paste0("No data was found for the dates: ", paste(Dates_NA, collapse = ", ")))
-
-  # Check that the coordinate names appear in the observed data
-  if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date"))) stop("The names of the coordinates do not appear in the observed data.")
   ##############################################################################
   #               Verify that there is a DEM and manage DEM layers.            #
   ##############################################################################
