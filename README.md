@@ -287,11 +287,13 @@ InterpolateR calculates two main types of metrics to assess the accuracy of inte
 These metrics evaluate the overall agreement between predicted and observed values. Metrics calculated by InterpolateR include:
 
 -   Mean absolute error (MAE)
--   Spearman's coefficient (CC)
+-   Mean Squared Error (MSE)
+-   Spearman's Correlation (rSpearman)
+-   pearson's Correlation (rPearson)
 -   Root mean square error (RMSE)
 -   Kling-Gupta Efficiency (KGE)
 -   Nash-Sutcliffe Efficiency (NSE)
--   Percentage bias (PBIAS)
+-   Percentage bias (PBIAS %)
 
 ### Categorical metrics
 
