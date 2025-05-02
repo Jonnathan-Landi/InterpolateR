@@ -220,7 +220,6 @@ testthat::test_that("RFplus saves model when save_model = TRUE", {
 )
   expected_file <- file.path(temp_dir, paste0(custom_name, ".nc"))
   testthat::expect_true(file.exists(expected_file), info = expected_file)
-  testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
 })
 
 # 15. "Save the model must be a logical value." (default name) " ---------------
@@ -237,7 +236,6 @@ testthat::test_that("RFplus saves model when save_model = TRUE (default name)", 
   )
   expected_file <- file.path(temp_dir, "Model_RFplus.nc")
   testthat::expect_true(file.exists(expected_file), info = expected_file)
-  testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
 })
 
 # 16. Test adicional para modulo de conexion

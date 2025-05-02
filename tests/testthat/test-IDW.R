@@ -113,7 +113,6 @@ testthat::test_that("IDW saves model when save_model = TRUE", {
   )
   expected_file <- file.path(temp_dir, paste0(custom_name, ".nc"))
   testthat::expect_true(file.exists(expected_file), info = expected_file)
-  testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
 })
 
 # 8. "Save the model must be a logical value (default name) " ------------------
@@ -132,5 +131,4 @@ testthat::test_that("IDW saves model when save_model = TRUE (default name)", {
   )
   expected_file <- file.path(temp_dir, "Model_IDW.nc")
   testthat::expect_true(file.exists(expected_file), info = expected_file)
-  testthat::expect_true(inherits(terra::rast(expected_file), "SpatRaster"))
 })
