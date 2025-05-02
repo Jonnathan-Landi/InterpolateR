@@ -29,6 +29,7 @@ testthat::test_that("IDW returns SpatRaster with full validation.", {
 
 # 2. Testing without validation ------------------------------------------------
 testthat::test_that("IDW works without validation", {
+  testthat::skip_on_cran()
   out <- IDW(BD_Obs, BD_Coord, shapefile,
              grid_resolution = 5, p = 2,
              n_round = 1, training = 1,
@@ -41,6 +42,7 @@ testthat::test_that("IDW works without validation", {
 
 # 3. shapefile must be a 'SpatVector' object. ----------------------------------
 testthat::test_that("Error if `shapefile` is not SpatVector.", {
+  testthat::skip_on_cran()
   bad_shape <- data.frame(x = 1:10, y = rnorm(10))
   testthat::expect_error(
     IDW(BD_Obs, BD_Coord, bad_shape,
@@ -55,6 +57,7 @@ testthat::test_that("Error if `shapefile` is not SpatVector.", {
 
 # 4. BD_Obs must be a 'data.table' or a 'data.frame'." -------------------------
 testthat::test_that("Error if `BD_Obs` is not a data.table or data.frame.", {
+  testthat::skip_on_cran()
   bad_obs <- list(x = 1:10, y = rnorm(10))
   testthat::expect_error(
     IDW(bad_obs, BD_Coord, shapefile,
@@ -69,6 +72,7 @@ testthat::test_that("Error if `BD_Obs` is not a data.table or data.frame.", {
 
 # 5. BD_Coord must be a 'data.table' or a 'data.frame'." -----------------------
 testthat::test_that("Error if `BD_Coord` is not a data.table or data.frame.", {
+  testthat::skip_on_cran()
   bad_coord <- list(x = 1:10, y = rnorm(10))
   testthat::expect_error(
     IDW(BD_Obs, bad_coord, shapefile,
@@ -83,6 +87,7 @@ testthat::test_that("Error if `BD_Coord` is not a data.table or data.frame.", {
 
 # 6. "The names of the coordinates do not appear in the observed data." --------
 testthat::test_that("Error if coordinates names do not appear in observed data.", {
+  testthat::skip_on_cran()
   bad_coord <- BD_Coord
   bad_coord[3,1] <- "x"
   testthat::expect_error(
@@ -98,6 +103,8 @@ testthat::test_that("Error if coordinates names do not appear in observed data."
 
 # 7. "Save the model must be a logical value." ---------------------------------
 testthat::test_that("IDW saves model when save_model = TRUE", {
+  testthat::skip_on_cran()
+
   temp_dir <- tempdir()
   withr::local_dir(temp_dir)
   custom_name <- "test_model_IDW"
@@ -117,6 +124,8 @@ testthat::test_that("IDW saves model when save_model = TRUE", {
 
 # 8. "Save the model must be a logical value (default name) " ------------------
 testthat::test_that("IDW saves model when save_model = TRUE (default name)", {
+  testthat::skip_on_cran()
+
   temp_dir <- tempdir()
   withr::local_dir(temp_dir)
   expect_message(

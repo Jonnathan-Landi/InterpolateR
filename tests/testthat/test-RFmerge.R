@@ -24,10 +24,9 @@ Rain_threshold = list(
   extremely_rain= c(40, Inf)
 )
 
-testthat::skip_on_cran()
-
 # 1. Testing with validation ---------------------------------------------------
 testthat::test_that("RFmerge returns SpatRaster without validation.", {
+  testthat::skip_on_cran()
   out <- RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
     seed = 123,  training = 1, stat_validation = NULL, Rain_threshold = NULL,
     save_model = FALSE, name_save = NULL)
@@ -38,6 +37,7 @@ testthat::test_that("RFmerge returns SpatRaster without validation.", {
 
 # 2. Testing with validation (random validation) --------------------------------
 testthat::test_that("RFmerge returns SpatRaster with random validation.", {
+  testthat::skip_on_cran()
   out <- RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
     seed = 123,  training = 0.8, stat_validation = NULL, Rain_threshold = Rain_threshold,
     save_model = FALSE, name_save = NULL)
@@ -50,6 +50,7 @@ testthat::test_that("RFmerge returns SpatRaster with random validation.", {
 
 # 3. Testing with validation (manual validation) --------------------------------
 testthat::test_that("RFmerge returns SpatRaster with manual validation.", {
+  testthat::skip_on_cran()
   out <- RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
     seed = 123,  training = 1, stat_validation = "M004", Rain_threshold = Rain_threshold,
     save_model = FALSE, name_save = NULL)
@@ -62,6 +63,7 @@ testthat::test_that("RFmerge returns SpatRaster with manual validation.", {
 
 # 4. Testing  RFmerge returns SpatRaster with random validation without ---------
 testthat::test_that("RFmerge returns SpatRaster with manual validation.", {
+  testthat::skip_on_cran()
   out <- RFmerge(BD_Obs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
     seed = 123,  training = 1, stat_validation = "M004", Rain_threshold = NULL,
     save_model = FALSE, name_save = NULL)
@@ -76,6 +78,7 @@ testthat::test_that("RFmerge returns SpatRaster with manual validation.", {
 ##############################################################################
 # 5. Testing error with The cov must be a list.
 testthat::test_that("The cov must be a list.", {
+  testthat::skip_on_cran()
   bad_cov <- data.frame(x = 1:10, y = rnorm(10))
   testthat::expect_error(
     RFmerge(BD_Obs, BD_Coord, bad_cov, mask = shapefile, n_round = 1, ntree = 2000,
@@ -87,6 +90,7 @@ testthat::test_that("The cov must be a list.", {
 
 # 6. The cov must be of type SpatRaster.
 testthat::test_that("The cov must be of type SpatRaster.", {
+  testthat::skip_on_cran()
   bad_cov <- cov
   bad_cov$Test <- data.frame(x = 1:10, y = rnorm(10))
   testthat::expect_error(
@@ -99,6 +103,7 @@ testthat::test_that("The cov must be of type SpatRaster.", {
 
 # 7. The extension of the cov are different (all extensions should be similar)
 testthat::test_that("The extension of the cov are different.", {
+  testthat::skip_on_cran()
   bad_cov <- cov
   terra::ext(bad_cov$MSWEP) = terra::ext(bad_cov$MSWEP) * 2
   testthat::expect_error(
@@ -111,6 +116,7 @@ testthat::test_that("The extension of the cov are different.", {
 
 # 8. "The crs of the cov are different (all crs should be similar).
 testthat::test_that("The crs of the cov are different.", {
+  testthat::skip_on_cran()
   bad_cov <- cov
   terra::crs(bad_cov$MSWEP) = "EPSG:4326"
   testthat::expect_error(
@@ -123,6 +129,7 @@ testthat::test_that("The crs of the cov are different.", {
 
 # 9. "BD_Obs must be a 'data.table' or a 'data.frame'."
 testthat::test_that("BD_Obs must be a 'data.table' or a 'data.frame'.", {
+  testthat::skip_on_cran()
   bad_BDObs = as.matrix(BD_Obs)
   testthat::expect_error(
     RFmerge(bad_BDObs, BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
@@ -134,6 +141,7 @@ testthat::test_that("BD_Obs must be a 'data.table' or a 'data.frame'.", {
 
 # 10. BD_Coord must be a 'data.table' or a 'data.frame'."
 testthat::test_that("BD_Coord must be a 'data.table' or a 'data.frame'.", {
+  testthat::skip_on_cran()
   bad_BD_Coord = as.matrix(BD_Coord)
   testthat::expect_error(
     RFmerge(BD_Obs, bad_BD_Coord, cov, mask = shapefile, n_round = 1, ntree = 2000,
@@ -145,6 +153,7 @@ testthat::test_that("BD_Coord must be a 'data.table' or a 'data.frame'.", {
 
 # 11. "The names of the coordinates do not appear in the observed data."
 testthat::test_that("names of the coordinates do not appear in the observed data.", {
+  testthat::skip_on_cran()
   bad_Cords = BD_Coord
   bad_Cords[3,1] = "yy"
   testthat::expect_error(
@@ -157,6 +166,7 @@ testthat::test_that("names of the coordinates do not appear in the observed data
 
 # 12. mask must be a 'SpatVector' object.
 testthat::test_that("mask must be a 'SpatVector'.", {
+  testthat::skip_on_cran()
   bad_shp = BD_Obs
   testthat::expect_error(
     RFmerge(BD_Obs, BD_Coord, cov, mask = bad_shp, n_round = 1, ntree = 2000,
@@ -168,6 +178,7 @@ testthat::test_that("mask must be a 'SpatVector'.", {
 
 # 13. Verify that all dates have at least one entry recorded
 testthat::test_that("Error when BD_Obs has rows with all NA values (except Date)", {
+  testthat::skip_on_cran()
   # Simular BD_Obs con una fila completamente NA (menos la fecha)
   BD_Obs <- data.table::data.table(
     Date = as.Date(c("2020-01-01", "2020-01-02")),
@@ -192,6 +203,7 @@ testthat::test_that("Error when BD_Obs has rows with all NA values (except Date)
 
 # 14. "Save the model must be a logical value."
 testthat::test_that("RFmerge saves model when save_model = TRUE", {
+  testthat::skip_on_cran()
   temp_dir <- tempdir()
   withr::local_dir(temp_dir)
   custom_name <- "test_model_RFmerge"
@@ -210,6 +222,7 @@ testthat::test_that("RFmerge saves model when save_model = TRUE", {
 
 # 15. "Save the model must be a logical value." (default name) " ------------------
 testthat::test_that("RFmerge saves model when save_model = TRUE (default name)", {
+  testthat::skip_on_cran()
   temp_dir <- tempdir()
   withr::local_dir(temp_dir)
   expect_message(
@@ -226,6 +239,7 @@ testthat::test_that("RFmerge saves model when save_model = TRUE (default name)",
 
 # 15. A single layer covariate was not found. Possibly the DEM was not entered..
 testthat::test_that("Single layer covariate was not found.", {
+  testthat::skip_on_cran()
   bad_Covs = cov
   bad_Covs$DEM = c(bad_Covs$DEM, bad_Covs$DEM)
   testthat::expect_error(

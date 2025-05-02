@@ -6,6 +6,7 @@ file.path <- system.file("extdata/Folds_ejs_create_data", package = "Interpolate
 skip_on_cran()
 # 1. Thest with default parameters
 testthat::test_that("Create data Method with basic input", {
+  testthat::skip_on_cran()
   out  <- create_data(file.path,
     Start_date = "2015-01-01", End_Date = "2015-03-01",
     ncores = NULL, max.na = NULL
@@ -15,6 +16,7 @@ testthat::test_that("Create data Method with basic input", {
 
 # 2. Test with different parameters (max.na set to 10)
 testthat::test_that("Create data Method with 10% NA.", {
+  testthat::skip_on_cran()
   out  <- create_data(file.path,
                       Start_date = "2015-01-01", End_Date = "2015-03-01",
                       ncores = NULL, max.na = 10
@@ -25,6 +27,7 @@ testthat::test_that("Create data Method with 10% NA.", {
 
 # 3. Test with paralel processing
 testthat::test_that("Create data Method with parallel processing", {
+  testthat::skip_on_cran()
   out  <- create_data(file.path,
                       Start_date = "2015-01-01", End_Date = "2015-03-01",
                       ncores = 2, max.na = NULL
