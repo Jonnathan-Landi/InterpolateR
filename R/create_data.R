@@ -40,8 +40,18 @@
 #' @importFrom future.apply future_lapply
 #'
 #' @export
-create_data <- function(file.path, Start_date, End_Date, ncores = NULL, max.na = NULL) {
-  file_list <- list.files(path = file.path, pattern = "*.csv", full.names = TRUE)
+create_data <- function(
+  file.path,
+  Start_date,
+  End_Date,
+  ncores = NULL,
+  max.na = NULL
+) {
+  file_list <- list.files(
+    path = file.path,
+    pattern = "*.csv",
+    full.names = TRUE
+  )
   station_names <- paste0(gsub("\\.csv$", "", basename(file_list)))
 
   read_data <- function(file) {
@@ -63,13 +73,19 @@ create_data <- function(file.path, Start_date, End_Date, ncores = NULL, max.na =
     dt[Date >= Start_date & Date <= End_Date]
   })
 
-  data_base <- Reduce(function(x, y) merge(x, y, by = "Date", all = TRUE), data_base)
+  data_base <- Reduce(
+    function(x, y) merge(x, y, by = "Date", all = TRUE),
+    data_base
+  )
   if (is.null(max.na)) {
     return(data_base)
   }
 
   # Calculation of void percentage
-  na_percentages <- data_base[, lapply(.SD, function(x) 100 * sum(is.na(x)) / .N), .SDcols = !c("Date")]
+  na_percentages <- data_base[,
+    lapply(.SD, function(x) 100 * sum(is.na(x)) / .N),
+    .SDcols = !c("Date")
+  ]
   estat_valid <- names(na_percentages)[na_percentages < max.na]
 
   # Select stations that meet the criteria
