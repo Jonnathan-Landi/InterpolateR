@@ -113,35 +113,55 @@
 #' @importFrom pbapply pboptions pblapply
 #' @importFrom data.table melt setDT setorder as.data.table setnames := data.table
 #' @export
-IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
-                n_round = NULL, training = 1, stat_validation = NULL,
-                Rain_threshold = NULL, save_model = FALSE, name_save = NULL) {
+IDW <- function(
+  BD_Obs,
+  BD_Coord,
+  shapefile,
+  grid_resolution,
+  p = 2,
+  n_round = NULL,
+  training = 1,
+  stat_validation = NULL,
+  Rain_threshold = NULL,
+  save_model = FALSE,
+  name_save = NULL
+) {
   ##############################################################################
   #                               Check input data                             #
   ##############################################################################
-  if (!inherits(shapefile, "SpatVector")) stop("shapefile must be a 'SpatVector' object.")
+  if (!inherits(shapefile, "SpatVector"))
+    stop("shapefile must be a 'SpatVector' object.")
 
   # BD_Obs can be a data.table or a data.frame
-  if (!inherits(BD_Obs, c("data.table", "data.frame"))) stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
+  if (!inherits(BD_Obs, c("data.table", "data.frame")))
+    stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
   names(BD_Obs)[1] <- "Date"
 
   # BD_Coord can be a data.table or a data.frame
-  if (!inherits(BD_Coord, c("data.table", "data.frame"))) stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
+  if (!inherits(BD_Coord, c("data.table", "data.frame")))
+    stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
 
   # Check that the coordinate names appear in the observed data
-  if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date"))) stop("The names of the coordinates do not appear in the observed data.")
+  if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date")))
+    stop("The names of the coordinates do not appear in the observed data.")
   ##############################################################################
   #                          Verify if validation is to be done                #
   ##############################################################################
   names_col <- base::setdiff(names(BD_Obs), "Date")
   Ids <- data.table::data.table(Cod = names_col, ID = 1:length(names_col))
   if (training != 1 | !is.null(stat_validation)) {
-    data_val <- .select_data(BD_Obs, BD_Coord, training = training,
-                           stat_validation = stat_validation)
+    data_val <- .select_data(
+      BD_Obs,
+      BD_Coord,
+      training = training,
+      stat_validation = stat_validation
+    )
     train_data <- data_val$train_data
     train_cords <- data_val$train_cords
   } else {
-    message("The training parameter was not entered. The model will be trained with all the data.")
+    message(
+      "The training parameter was not entered. The model will be trained with all the data."
+    )
     train_data <- BD_Obs
     train_cords <- BD_Coord
   }
@@ -177,20 +197,33 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   Points_Train <- unique(Points_Train, by = "Cod")[, .(ID, Cod, X, Y)]
   data.table::setorder(Points_Train, ID)
 
-  Points_VectTrain <- terra::vect(Points_Train, geom = c("X", "Y"), crs = coord.ref)
+  Points_VectTrain <- terra::vect(
+    Points_Train,
+    geom = c("X", "Y"),
+    crs = coord.ref
+  )
   ##############################################################################
   #                          IDW algotithm                                     #
   ##############################################################################
-  data_IDW <- data.table::as.data.table(terra::as.data.frame(spl_layer, xy = TRUE))
+  data_IDW <- data.table::as.data.table(terra::as.data.frame(
+    spl_layer,
+    xy = TRUE
+  ))
   data_IDW <- data_IDW[, .(X = x, Y = y)]
   coords <- as.matrix(data_IDW[, .(X, Y)])
-  distancias <- data.table::as.data.table(terra::distance(terra::vect(coords, crs = coord.ref), Points_VectTrain))
+  distancias <- data.table::as.data.table(terra::distance(
+    terra::vect(coords, crs = coord.ref),
+    Points_VectTrain
+  ))
   data.table::setnames(distancias, Points_VectTrain$Cod)
   data_IDW <- cbind(data_IDW, distancias)
 
   estaciones <- as.character(Points_VectTrain$Cod)
   denoms <- lapply(estaciones, function(est) 1 / (data_IDW[[est]]^p))
-  denoms_dt <- data.table::setnames(data.table::as.data.table(denoms), paste0("d_", estaciones))
+  denoms_dt <- data.table::setnames(
+    data.table::as.data.table(denoms),
+    paste0("d_", estaciones)
+  )
 
   idw <- function(data_obs) {
     obs_values <- stats::setNames(data_obs$var, data_obs$Cod)
@@ -202,7 +235,10 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
       }
     })
 
-    nums_dt <- data.table::setnames(data.table::as.data.table(nums), paste0("n_", estaciones))
+    nums_dt <- data.table::setnames(
+      data.table::as.data.table(nums),
+      paste0("n_", estaciones)
+    )
     result <- data_IDW[, .(X, Y)]
     result[, sum_n := rowSums(nums_dt, na.rm = TRUE)]
     result[, sum_d := rowSums(denoms_dt, na.rm = TRUE)]
@@ -228,7 +264,8 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   })
 
   Ensamble <- terra::rast(raster_Model)
-  if (!is.null(n_round)) Ensamble <- terra::app(Ensamble, \(x) round(x, n_round))
+  if (!is.null(n_round))
+    Ensamble <- terra::app(Ensamble, \(x) round(x, n_round))
   names(Ensamble) <- as.character(Dates_extracted)
 
   ##############################################################################
@@ -237,8 +274,13 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   if (training != 1 | !is.null(stat_validation)) {
     test_cords <- data_val$test_cords
     test_data <- data_val$test_data
-    final_results <- .validate(test_cords,  test_data, crss = coord.ref,
-                              Ensamble, Rain_threshold = Rain_threshold)
+    final_results <- .validate(
+      test_cords,
+      test_data,
+      crss = coord.ref,
+      Ensamble,
+      Rain_threshold = Rain_threshold
+    )
   }
   ##############################################################################
   #                           Save the model if necessary                      #
@@ -252,6 +294,7 @@ IDW <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, p = 2,
   ##############################################################################
   #                                      Return                                #
   ##############################################################################
-  if (training != 1 | !is.null(stat_validation)) return(list(Ensamble = Ensamble, Validation = final_results))
+  if (training != 1 | !is.null(stat_validation))
+    return(list(Ensamble = Ensamble, Validation = final_results))
   if (training == 1 & is.null(stat_validation)) return(Ensamble)
-} # end funtion
+}
