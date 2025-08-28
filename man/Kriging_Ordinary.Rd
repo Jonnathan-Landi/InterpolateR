@@ -167,7 +167,7 @@ shp_path = system.file("extdata", "study_area.shp", package = "InterpolateR")
 shapefile = terra::vect(shp_path)
 
 # Perform the interpolation
-Interpolated_data <- Kriging(BD_Obs, BD_Coord, shapefile,
+Interpolated_data <- Kriging_Ordinary(BD_Obs, BD_Coord, shapefile,
   grid_resolution = 5, variogram_model = "exponential",
   max_dist = NULL, n_lags = 15, n_round = 1, training = 0.8,
   Rain_threshold = NULL, stat_validation = NULL,
