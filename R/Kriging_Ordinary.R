@@ -70,8 +70,8 @@
 #' shapefile = terra::vect(shp_path)
 #'
 #' # Perform the interpolation
-#' Interpolated_data <- Kriging(BD_Obs, BD_Coord, shapefile,
-#'   grid_resolution = 5, variogram_model = "exponential",
+#' Interpolated_data <- Kriging_Ordinary(BD_Obs, BD_Coord, shapefile,
+#'   grid_resolution = 5, variogram_model = c("exponential", "spherical", "gaussian", "linear"),
 #'   max_dist = NULL, n_lags = 15, n_round = 1, training = 0.8,
 #'   Rain_threshold = NULL, stat_validation = NULL,
 #'   save_model = FALSE, name_save = NULL)
@@ -131,7 +131,7 @@
 #' @references
 #' Matheron, G. (1963). Principles of geostatistics. Economic Geology, 58(8), 1246-1266.
 #' Cressie, N. (1993). Statistics for Spatial Data. John Wiley & Sons.
-#' @author Jonnathan Landi <jonnathan.landi@outlook.com>
+#' @author Marco Mogro <marcov.mogro@ucuenca.edu.ec>
 #' @importFrom stats setNames optimize
 #' @importFrom pbapply pboptions pblapply
 #' @importFrom data.table melt setDT setorder as.data.table setnames := data.table
@@ -416,3 +416,4 @@ Kriging_Ordinary <- function(BD_Obs, BD_Coord, shapefile, grid_resolution,
     return(Ensamble)
   }
 }
+
