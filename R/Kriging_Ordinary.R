@@ -416,6 +416,3 @@ Kriging_Ordinary <- function(BD_Obs, BD_Coord, shapefile, grid_resolution,
     return(Ensamble)
   }
 }
-
-
-
