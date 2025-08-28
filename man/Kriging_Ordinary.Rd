@@ -69,6 +69,8 @@ The shapefile must be of class \code{SpatVector} (from the \code{terra} package)
 \item{max_dist}{Numeric value specifying the maximum distance (in meters) for variogram calculation and kriging prediction.
 If \code{NULL} (default), it will be set to half the maximum distance between stations.}
 
+\item{n_lags}{Integer specifying the number of lag bins to use in the empirical variogram calculation. Default is 15.}
+
 \item{min_stations}{Integer specifying the minimum number of stations required for kriging interpolation.
 If fewer stations are available (due to NAs), the function will return a constant field or use fallback methods.
 Default is 2, which is more permissive for sparse precipitation data.}
