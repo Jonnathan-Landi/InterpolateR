@@ -59,6 +59,8 @@
 #'     If set to `TRUE`, be sure to set the working directory beforehand using `setwd(path)` to specify where the files should be saved.
 #' @param name_save Character string indicating the name under which the interpolation raster file will be saved. By default the algorithm sets as output name: 'Model_Kriging'.
 #'
+#' @param n_lags Integer specifying the number of lag bins to use in the empirical variogram calculation. Default is 15.
+#'
 #' @examples
 #' \donttest{
 #' # Load data from on-site observations
