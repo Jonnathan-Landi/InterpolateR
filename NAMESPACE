@@ -2,6 +2,7 @@
 
 export(Cressman)
 export(IDW)
+export(Kriging_Ordinary)
 export(RFmerge)
 export(RFplus)
 export(create_data)
@@ -20,4 +21,5 @@ importFrom(future,sequential)
 importFrom(future.apply,future_lapply)
 importFrom(pbapply,pblapply)
 importFrom(pbapply,pboptions)
+importFrom(stats,optimize)
 importFrom(stats,setNames)
