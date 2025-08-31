@@ -6,7 +6,7 @@ Authors@R: c(
            role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0009-0003-3162-6647")),
     person("Marco", "Mogro", email = "marcov.mogro@ucuenca.edu.ec",
-           role = c("aut", "cre"),
+           role = c("aut"),
            comment = c(ORCID = "0009-0007-1802-9417"))
   )
 Maintainer: Jonnathan Landi <jonnathan.landi@outlook.com>                
