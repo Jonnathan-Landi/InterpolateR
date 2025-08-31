@@ -132,40 +132,62 @@
 #' Cressman, G. P., 1959: An operational objective analysis system. Mon. Wea. Rev., 87, 367-374, doi:10.1175/1520-0493(1959)087%3C0367:AOOAS%3E2.0.CO;2.
 #' @author Jonnathan Landi <jonnathan.landi@outlook.com>
 #' @export
-Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius,
-                     training = 1, stat_validation = NULL, Rain_threshold = NULL,
-                     save_model = FALSE) {
+Cressman <- function(
+  BD_Obs,
+  BD_Coord,
+  shapefile,
+  grid_resolution,
+  search_radius,
+  training = 1,
+  stat_validation = NULL,
+  Rain_threshold = NULL,
+  save_model = FALSE
+) {
   ##############################################################################
   #                               Check input data                             #
   ##############################################################################
   # Shapefile must be a 'spatVector' object and coordinate reference system (CRS) must be defined
-  if (!inherits(shapefile, "SpatVector")) stop("shapefile must be a 'SpatVector' object.")
+  if (!inherits(shapefile, "SpatVector")) {
+    stop("shapefile must be a 'SpatVector' object.")
+  }
 
   # BD_Obs can be a data.table or a data.frame
-  if (!inherits(BD_Obs, c("data.table", "data.frame"))) stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
+  if (!inherits(BD_Obs, c("data.table", "data.frame"))) {
+    stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
+  }
   names(BD_Obs)[1] <- "Date"
 
   # BD_Coord can be a data.table or a data.frame
-  if (!inherits(BD_Coord, c("data.table", "data.frame"))) stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
+  if (!inherits(BD_Coord, c("data.table", "data.frame"))) {
+    stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
+  }
 
   # Check that the coordinate names appear in the observed data
-  if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date"))) stop("The names of the coordinates do not appear in the observed data.")
-    ##############################################################################
+  if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date"))) {
+    stop("The names of the coordinates do not appear in the observed data.")
+  }
+  ##############################################################################
   #                          Verify if validation is to be done                #
   ##############################################################################
   names_col <- base::setdiff(names(BD_Obs), "Date")
   Ids <- data.table::data.table(Cod = names_col, ID = 1:length(names_col))
   if (training != 1 | !is.null(stat_validation)) {
-    data_val = .select_data(BD_Obs, BD_Coord, training = training,
-                           stat_validation = stat_validation)
+    data_val = .select_data(
+      BD_Obs,
+      BD_Coord,
+      training = training,
+      stat_validation = stat_validation
+    )
     train_data <- data_val$train_data
     train_cords <- data_val$train_cords
   } else {
-    message("The training parameter was not entered. The model will be trained with all the data.")
+    message(
+      "The training parameter was not entered. The model will be trained with all the data."
+    )
     train_data <- BD_Obs
     train_cords <- BD_Coord
   }
-    ##############################################################################
+  ##############################################################################
   #                           Zone of Interpolation                            #
   ##############################################################################
   grid_resolution <- grid_resolution * 1000
@@ -173,9 +195,10 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
   spl_layer <- terra::rast(
     terra::ext(shapefile),
     resolution = grid_resolution,
-    crs = coord.ref)
+    crs = coord.ref
+  )
   terra::values(spl_layer) <- 0
-    ##############################################################################
+  ##############################################################################
   #                           Data training                                    #
   ##############################################################################
   Cressman_data <- data.table::melt(
@@ -192,7 +215,11 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
   Points_Train <- unique(Points_Train, by = "Cod")[, .(ID, Cod, X, Y, Z)]
   data.table::setorder(Points_Train, ID)
 
-  Points_VectTrain <- terra::vect(Points_Train, geom = c("X", "Y"), crs = coord.ref)
+  Points_VectTrain <- terra::vect(
+    Points_Train,
+    geom = c("X", "Y"),
+    crs = coord.ref
+  )
 
   ##############################################################################
   #                          Cressman algotithm                                #
@@ -201,7 +228,10 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
   data.table::setnames(data_Crsmn, c("X", "Y", "value"))
   coords <- as.matrix(data_Crsmn[, .(X, Y)])
 
-  distancias <- data.table::as.data.table(terra::distance(terra::vect(coords, crs = terra::crs(spl_layer)), Points_VectTrain))
+  distancias <- data.table::as.data.table(terra::distance(
+    terra::vect(coords, crs = terra::crs(spl_layer)),
+    Points_VectTrain
+  ))
   data.table::setnames(distancias, Points_VectTrain$Cod)
   data_Crsmn <- cbind(data_Crsmn[, .(X, Y)], distancias)
 
@@ -211,7 +241,8 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
 
   weights <- lapply(search_radius, function(R) {
     R_sq <- R^2
-    w <- (R_sq - data_Crsmn[, estaciones, with = FALSE]^2) / (R_sq + data_Crsmn[, estaciones, with = FALSE]^2)
+    w <- (R_sq - data_Crsmn[, estaciones, with = FALSE]^2) /
+      (R_sq + data_Crsmn[, estaciones, with = FALSE]^2)
     w[data_Crsmn[, estaciones, with = FALSE] > R] <- 0
     w
   })
@@ -220,7 +251,12 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
   # Función optimizada para cálculo de Cressman
   crsmn_logic_opt <- function(data_obs) {
     obs_values <- data_obs$var[match(estaciones, data_obs$Cod)]
-    obs_matrix <- matrix(obs_values, nrow = nrow(data_Crsmn), ncol = length(estaciones), byrow = TRUE)
+    obs_matrix <- matrix(
+      obs_values,
+      nrow = nrow(data_Crsmn),
+      ncol = length(estaciones),
+      byrow = TRUE
+    )
 
     lapply(names(weights), function(r) {
       w <- as.matrix(weights[[r]])
@@ -230,17 +266,24 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
 
       # Crear raster directamente desde data.table
       terra::rast(
-        data_Crsmn[, .(X, Y, value = ifelse(is.na(result) | denom == 0, NA, result))],
+        data_Crsmn[, .(
+          X,
+          Y,
+          value = ifelse(is.na(result) | denom == 0, NA, result)
+        )],
         crs = terra::crs(spl_layer),
         type = "xyz"
       )
-    }) |> stats::setNames(names(weights))
+    }) |>
+      stats::setNames(names(weights))
   }
 
   # Función de llamada optimizada
   call_crsm_opt <- function(day) {
     data_obs <- Cressman_data[Date == day, .(Cod, var)]
-    if (nrow(data_obs) == 0) return(NULL)
+    if (nrow(data_obs) == 0) {
+      return(NULL)
+    }
     crsmn_logic_opt(data_obs)
   }
 
@@ -252,7 +295,8 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
   # Crear stacks por radio
   Ensamble <- lapply(names(weights), function(r) {
     terra::rast(lapply(raster_Model, \(x) x[[r]]))
-  }) |> stats::setNames(names(weights))
+  }) |>
+    stats::setNames(names(weights))
 
   ##############################################################################
   #                           Perform validation if established                #
@@ -266,7 +310,8 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
         Ensamble = Ensamble[[name]],
         Rain_threshold = Rain_threshold
       )
-    }) |> stats::setNames(names(Ensamble))
+    }) |>
+      stats::setNames(names(Ensamble))
   }
   ##############################################################################
   #                           Save the model if necessary                      #
@@ -287,7 +332,8 @@ Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius
   ##############################################################################
   #                                      Return                                #
   ##############################################################################
-  if (training != 1 | !is.null(stat_validation)) return(list(Ensamble = Ensamble, Validation = final_results))
+  if (training != 1 | !is.null(stat_validation)) {
+    return(list(Ensamble = Ensamble, Validation = final_results))
+  }
   if (training == 1 & is.null(stat_validation)) return(Ensamble)
-
 } # End function cressman
