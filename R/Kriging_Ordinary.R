@@ -156,6 +156,46 @@ Kriging_Ordinary <- function(
   save_model = FALSE,
   name_save = NULL
 ) {
+  ##############################################################################
+  #                               Check input data                             #
+  ##############################################################################
+  # Shapefile must be a 'spatVector' object and coordinate reference system (CRS) must be defined
+  if (!inherits(shapefile, "SpatVector")) {
+    stop("shapefile must be a 'SpatVector' with a defined CRS.")
+  }
+  # BD_Obs must be a data.frame or data.table
+  if (!inherits(BD_Obs, c("data.table", "data.frame"))) {
+    stop("BD_Obs must be a 'data.frame' or 'data.table'.")
+  }
+  # BD_Coord must be a data.frame or data.table
+  if (!inherits(BD_Coord, c("data.table", "data.frame"))) {
+    stop("BD_Coord must be a 'data.frame' or 'data.table'.")
+  }
+  # Variogram model must be one of the specified options
+  if (!variogram_model %in% c("exponential", "spherical", "gaussian", "linear")) {
+    stop("variogram_model must be one of 'exponential', 'spherical', 'gaussian', or 'linear'.")
+  }
+  # grid_resolution must be numeric and positive
+  if (!is.numeric(grid_resolution) || length(grid_resolution) != 1L) {
+    stop("'grid_resolution' must be a single numeric value (km).")
+  }
+  # n_lags must be a positive integer
+  if (!is.numeric(n_lags) || length(n_lags) != 1L || n_lags <= 0 || n_lags != floor(n_lags)) {
+    stop("'n_lags' must be a single positive integer.")
+  }
+  # min_stations must be a positive integer
+  if (!is.numeric(min_stations) || length(min_stations) != 1L || min_stations <= 0 || min_stations != floor(min_stations)) {
+    stop("'min_stations' must be a single positive integer.")
+  }
+  # n_round must be NULL or a positive integer
+  if (!is.null(n_round) && (!is.numeric(n_round) || length(n_round) != 1L || n_round < 0 || n_round != floor(n_round))) {
+    stop("'n_round' must be NULL or a single non-negative integer.")
+  }
+
+  # Convert BD_Obs and BD_Coord to data.table if they are not already
+  data.table::setDT(BD_Obs)
+  data.table::setDT(BD_Coord)
+
   # Input validation (consolidated)
   stopifnot(
     inherits(shapefile, "SpatVector"),
@@ -545,3 +585,4 @@ Kriging_Ordinary <- function(
     return(Ensamble)
   }
 }
+
