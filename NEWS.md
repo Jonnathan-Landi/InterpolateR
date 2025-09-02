@@ -1,3 +1,12 @@
+# Version 1.4-4 (Development)
+
+### New Features
+- The entire Cressman algorithm code has been refactored, which has accelerated its execution speed.
+- The “n_round” functionality has been added to the Cressman algorithm, which allows the final layers to be rounded.
+### Bug Fixed
+- An error that occurred if the “Z” column was not passed in BD_Coords when it was not mandatory has been corrected.
+
+
 # Version 1.3-4 (Development)
 
 ### New Features

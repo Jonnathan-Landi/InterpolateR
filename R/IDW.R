@@ -129,21 +129,25 @@ IDW <- function(
   ##############################################################################
   #                               Check input data                             #
   ##############################################################################
-  if (!inherits(shapefile, "SpatVector"))
+  if (!inherits(shapefile, "SpatVector")) {
     stop("shapefile must be a 'SpatVector' object.")
+  }
 
   # BD_Obs can be a data.table or a data.frame
-  if (!inherits(BD_Obs, c("data.table", "data.frame")))
+  if (!inherits(BD_Obs, c("data.table", "data.frame"))) {
     stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
+  }
   names(BD_Obs)[1] <- "Date"
 
   # BD_Coord can be a data.table or a data.frame
-  if (!inherits(BD_Coord, c("data.table", "data.frame")))
+  if (!inherits(BD_Coord, c("data.table", "data.frame"))) {
     stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
+  }
 
   # Check that the coordinate names appear in the observed data
-  if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date")))
+  if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date"))) {
     stop("The names of the coordinates do not appear in the observed data.")
+  }
   ##############################################################################
   #                          Verify if validation is to be done                #
   ##############################################################################
@@ -264,8 +268,9 @@ IDW <- function(
   })
 
   Ensamble <- terra::rast(raster_Model)
-  if (!is.null(n_round))
+  if (!is.null(n_round)) {
     Ensamble <- terra::app(Ensamble, \(x) round(x, n_round))
+  }
   names(Ensamble) <- as.character(Dates_extracted)
 
   ##############################################################################
@@ -287,14 +292,17 @@ IDW <- function(
   ##############################################################################
   if (save_model) {
     message("Model saved successfully")
-    if (is.null(name_save)) name_save <- "Model_IDW"
+    if (is.null(name_save)) {
+      name_save <- "Model_IDW"
+    }
     name_saving <- paste0(name_save, ".nc")
     terra::writeCDF(Ensamble, filename = name_saving, overwrite = TRUE)
   }
   ##############################################################################
   #                                      Return                                #
   ##############################################################################
-  if (training != 1 | !is.null(stat_validation))
+  if (training != 1 | !is.null(stat_validation)) {
     return(list(Ensamble = Ensamble, Validation = final_results))
+  }
   if (training == 1 & is.null(stat_validation)) return(Ensamble)
 }

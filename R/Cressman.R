@@ -39,6 +39,8 @@
 #'  \strong{Note:} See the "Notes" section for additional details on how to search radius values.
 #' @param training Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 % of the data will be used for training and 20 % for validation.
 #' If you do not want to perform validation, set training = 1. (Default training = 1).
+#' @param n_round An integer specifying the number of decimal places to round the interpolated results.
+#'   If set to `NULL`, all decimal places will be preserved. .
 #' @param stat_validation A character vector specifying the names of the stations to be used for validation.
 #'  This option should only be filled in when it is desired to manually enter the stations used for validation. If this parameter is NULL, and the formation is different from 1, a validation will be performed using random stations.
 #'  The vector must contain the names of the stations selected by the user for validation.
@@ -60,15 +62,15 @@
 #' shapefile = terra::vect(shp_path)
 #'  # Perform the interpolation
 #' Interpolated_Cressman <- Cressman(BD_Obs, BD_Coord, shapefile, grid_resolution = 5,
-#'                                   search_radius = 10, training = 1,
+#'                                   search_radius = 10, training = 1, n_round = 2,
 #'                                   stat_validation = "M001", Rain_threshold = NULL,
 #'                                  save_model = FALSE)
 #' # Results ("Ensamble with 10 km radius")
-#' Radius_10 = Interpolated_Cressman$Ensamble$`10000`
+#' Radius_10 <- Interpolated_Cressman$Ensamble$`10 km`
 #'
 #' # Validation statistics
 #' # Validation results with a 10 km radius
-#' Validation_results_10 = Interpolated_Cressman$Validation$`10000`
+#' Validation_results_10 = Interpolated_Cressman$Validation$`10 km`
 #' }
 #' @section Details:
 #' The Cressman method is defined by the following equation:
@@ -132,162 +134,263 @@
 #' Cressman, G. P., 1959: An operational objective analysis system. Mon. Wea. Rev., 87, 367-374, doi:10.1175/1520-0493(1959)087%3C0367:AOOAS%3E2.0.CO;2.
 #' @author Jonnathan Landi <jonnathan.landi@outlook.com>
 #' @export
-Cressman <- function(BD_Obs, BD_Coord, shapefile, grid_resolution, search_radius,
-                     training = 1, stat_validation = NULL, Rain_threshold = NULL,
-                     save_model = FALSE) {
+Cressman <- function(
+  BD_Obs,
+  BD_Coord,
+  shapefile,
+  grid_resolution,
+  search_radius,
+  training = 1,
+  n_round = NULL,
+  stat_validation = NULL,
+  Rain_threshold = NULL,
+  save_model = FALSE
+) {
   ##############################################################################
   #                               Check input data                             #
   ##############################################################################
   # Shapefile must be a 'spatVector' object and coordinate reference system (CRS) must be defined
-  if (!inherits(shapefile, "SpatVector")) stop("shapefile must be a 'SpatVector' object.")
+  if (!inherits(shapefile, "SpatVector")) {
+    stop("shapefile must be a 'SpatVector' with a defined CRS.")
+  }
 
-  # BD_Obs can be a data.table or a data.frame
-  if (!inherits(BD_Obs, c("data.table", "data.frame"))) stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
-  names(BD_Obs)[1] <- "Date"
+  if (is.null(terra::crs(shapefile))) {
+    stop("shapefile CRS is undefined.")
+  }
 
-  # BD_Coord can be a data.table or a data.frame
-  if (!inherits(BD_Coord, c("data.table", "data.frame"))) stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
+  if (!inherits(BD_Obs, c("data.table", "data.frame"))) {
+    stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
+  }
 
-  # Check that the coordinate names appear in the observed data
-  if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date"))) stop("The names of the coordinates do not appear in the observed data.")
-    ##############################################################################
+  if (!inherits(BD_Coord, c("data.table", "data.frame"))) {
+    stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
+  }
+
+  if (!is.numeric(grid_resolution) || length(grid_resolution) != 1L) {
+    stop("'grid_resolution' must be a single numeric value (km).")
+  }
+
+  if (!is.numeric(search_radius) || length(search_radius) < 1L) {
+    stop("'search_radius' must be a numeric vector (km).")
+  }
+
+  data.table::setDT(BD_Obs)
+  data.table::setDT(BD_Coord)
+  ##############################################################################
   #                          Verify if validation is to be done                #
   ##############################################################################
+  # Assume order to assign names
+  names(BD_Coord)[1:3] = c("Cod", "X", "Y")
+  names(BD_Obs)[1] = "Date"
+
   names_col <- base::setdiff(names(BD_Obs), "Date")
-  Ids <- data.table::data.table(Cod = names_col, ID = 1:length(names_col))
-  if (training != 1 | !is.null(stat_validation)) {
-    data_val = .select_data(BD_Obs, BD_Coord, training = training,
-                           stat_validation = stat_validation)
+  if (!all(BD_Coord$Cod %in% names_col)) {
+    faltantes = setdiff(unique(BD_Coord$Cod), names_col)
+    stop(
+      "The following codes from BD_Coord do not appear in BD_Obs: ",
+      paste(faltantes, collapse = ", ")
+    )
+  }
+
+  Ids <- data.table::data.table(Cod = names_col, ID = seq_along(names_col))
+  if (training != 1 || !is.null(stat_validation)) {
+    data_val <- .select_data(
+      BD_Obs,
+      BD_Coord,
+      training = training,
+      stat_validation = stat_validation
+    )
     train_data <- data_val$train_data
     train_cords <- data_val$train_cords
   } else {
-    message("The training parameter was not entered. The model will be trained with all the data.")
+    message("Training not specified; using all data for training.")
     train_data <- BD_Obs
     train_cords <- BD_Coord
   }
-    ##############################################################################
+
+  data.table::setDT(train_data)
+  data.table::setDT(train_cords)
+  ##############################################################################
   #                           Zone of Interpolation                            #
   ##############################################################################
-  grid_resolution <- grid_resolution * 1000
+  grid_resolution_m <- grid_resolution * 1000
+  search_radius_m <- as.numeric(search_radius) * 1000
+  search_radius_m <- sort(unique(search_radius_m))
+
   coord.ref <- terra::crs(shapefile)
   spl_layer <- terra::rast(
     terra::ext(shapefile),
-    resolution = grid_resolution,
-    crs = coord.ref)
-  terra::values(spl_layer) <- 0
-    ##############################################################################
+    resolution = grid_resolution_m,
+    crs = coord.ref
+  )
+  # Initial template without data
+  terra::values(spl_layer) <- NA_real_
+  ##############################################################################
   #                           Data training                                    #
   ##############################################################################
-  Cressman_data <- data.table::melt(
+  Cressman_data = data.table::melt(
     train_data,
     id.vars = "Date",
+    measure.vars = setdiff(names(train_data), "Date"),
     variable.name = "Cod",
-    value.name = "var"
+    value.name = "var",
+    variable.factor = FALSE
   )
-  Cressman_data <- Ids[Cressman_data, on = "Cod"]
-  Dates_extracted <- unique(Cressman_data[, Date])
-  Points_Train <- merge(Cressman_data, train_cords, by = "Cod")
-  data.table::setDT(Points_Train)
 
-  Points_Train <- unique(Points_Train, by = "Cod")[, .(ID, Cod, X, Y, Z)]
+  data.table::setkey(Ids, Cod)
+  data.table::setDT(train_cords)
+  train_cords = Ids[train_cords, on = "Cod"]
+  data.table::setkey(Cressman_data, Cod)
+  Cressman_data <- Ids[Cressman_data]
+
+  # Dates
+  Dates_extracted <- sort(unique(Cressman_data$Date))
+
+  pairs_ID_Cod = unique(Cressman_data[, .(ID, Cod)], by = "Cod")
+  cols_coords = c("ID", "Cod", "X", "Y")
+
+  # MERGE
+  Points_Train = train_cords[, ..cols_coords][
+    pairs_ID_Cod,
+    on = .(ID, Cod)
+  ]
+
   data.table::setorder(Points_Train, ID)
+  Points_VectTrain <- terra::vect(
+    Points_Train,
+    geom = c("X", "Y"),
+    crs = coord.ref
+  )
+  ##############################################################################
+  #                                Cressman Core                               #
+  ##############################################################################
+  # Extract grid coordinates
+  grid_xy <- terra::as.data.frame(
+    spl_layer,
+    xy = TRUE,
+    cells = TRUE,
+    na.rm = FALSE
+  )[, c("x", "y", "cell")]
+  data.table::setDT(grid_xy)
+  data.table::setnames(grid_xy, c("x", "y", "cell"), c("X", "Y", "cell"))
+  data.table::setorder(grid_xy, cell)
+  n_cells <- nrow(grid_xy)
 
-  Points_VectTrain <- terra::vect(Points_Train, geom = c("X", "Y"), crs = coord.ref)
+  dist_dt <- data.table::as.data.table(terra::distance(
+    terra::vect(as.matrix(grid_xy[, .(X, Y)]), crs = coord.ref),
+    Points_VectTrain
+  ))
 
+  estaciones <- Points_Train$Cod
+  data.table::setnames(dist_dt, estaciones)
+
+  dist_mat <- as.matrix(dist_dt) # n_cells x n_est
+  dist_sq <- dist_mat * dist_mat
+
+  weights_list <- lapply(search_radius_m, function(R) {
+    R2 <- R * R
+    # w = (R^2 - d^2) / (R^2 + d^2); w = 0 si d > R
+    num <- R2 - dist_sq
+    den <- R2 + dist_sq
+    w <- num / den
+    w[dist_mat > R] <- 0
+    storage.mode(w) <- "double"
+    w
+  })
+  names(weights_list) <- as.character(search_radius_m)
+
+  make_raster_from_vec <- function(vals_vec) {
+    r <- terra::rast(spl_layer)
+    terra::values(r) <- vals_vec
+    r
+  }
   ##############################################################################
   #                          Cressman algotithm                                #
   ##############################################################################
-  data_Crsmn <- data.table::as.data.table(as.data.frame(spl_layer, xy = TRUE))
-  data.table::setnames(data_Crsmn, c("X", "Y", "value"))
-  coords <- as.matrix(data_Crsmn[, .(X, Y)])
-
-  distancias <- data.table::as.data.table(terra::distance(terra::vect(coords, crs = terra::crs(spl_layer)), Points_VectTrain))
-  data.table::setnames(distancias, Points_VectTrain$Cod)
-  data_Crsmn <- cbind(data_Crsmn[, .(X, Y)], distancias)
-
-  # Pre-calcular matrices de pesos para cada radio
-  search_radius <- search_radius * 1000
-  estaciones <- Points_VectTrain$Cod
-
-  weights <- lapply(search_radius, function(R) {
-    R_sq <- R^2
-    w <- (R_sq - data_Crsmn[, estaciones, with = FALSE]^2) / (R_sq + data_Crsmn[, estaciones, with = FALSE]^2)
-    w[data_Crsmn[, estaciones, with = FALSE] > R] <- 0
-    w
-  })
-  names(weights) <- as.character(search_radius)
-
-  # Función optimizada para cálculo de Cressman
   crsmn_logic_opt <- function(data_obs) {
-    obs_values <- data_obs$var[match(estaciones, data_obs$Cod)]
-    obs_matrix <- matrix(obs_values, nrow = nrow(data_Crsmn), ncol = length(estaciones), byrow = TRUE)
-
-    lapply(names(weights), function(r) {
-      w <- as.matrix(weights[[r]])
-      numer <- rowSums(w * obs_matrix, na.rm = TRUE)
+    obs_vec <- data_obs$var[match(estaciones, data_obs$Cod)]
+    res_by_R <- lapply(names(weights_list), function(rn) {
+      w <- weights_list[[rn]]
+      numer <- rowSums(sweep(w, 2L, obs_vec, `*`), na.rm = TRUE)
       denom <- rowSums(w, na.rm = TRUE)
-      result <- numer / denom
-
-      # Crear raster directamente desde data.table
-      terra::rast(
-        data_Crsmn[, .(X, Y, value = ifelse(is.na(result) | denom == 0, NA, result))],
-        crs = terra::crs(spl_layer),
-        type = "xyz"
-      )
-    }) |> stats::setNames(names(weights))
+      out <- numer / denom
+      out[!is.finite(out) | denom == 0] <- NA_real_
+      make_raster_from_vec(out)
+    })
+    stats::setNames(res_by_R, names(weights_list))
   }
 
-  # Función de llamada optimizada
-  call_crsm_opt <- function(day) {
-    data_obs <- Cressman_data[Date == day, .(Cod, var)]
-    if (nrow(data_obs) == 0) return(NULL)
+  # Wrapper by date (handles days without data)
+  call_crsm_opt <- function(day_i) {
+    data_obs <- Cressman_data[Date == day_i, .(Cod, var)]
+    if (nrow(data_obs) == 0L) {
+      return(stats::setNames(
+        lapply(weights_list, function(.) {
+          make_raster_from_vec(rep(NA_real_, n_cells))
+        }),
+        names(weights_list)
+      ))
+    }
     crsmn_logic_opt(data_obs)
   }
 
-  # Procesamiento paralelizable
-  pbapply::pboptions(type = "timer", use_lb = F, style = 1, char = "=")
+  #  Process with progress bar
+  pbapply::pboptions(type = "timer", use_lb = FALSE, style = 1, char = "=")
   message("Analysis in progress. Please wait...")
-  raster_Model <- pbapply::pblapply(Dates_extracted, call_crsm_opt)
+  raster_by_day <- pbapply::pblapply(Dates_extracted, call_crsm_opt)
 
-  # Crear stacks por radio
-  Ensamble <- lapply(names(weights), function(r) {
-    terra::rast(lapply(raster_Model, \(x) x[[r]]))
-  }) |> stats::setNames(names(weights))
+  # Build stacks by radio
+  Ensamble <- lapply(names(weights_list), function(rn) {
+    terra::rast(lapply(raster_by_day, `[[`, rn))
+  })
+  # assign names according to the date layer
+  Ensamble = lapply(Ensamble, function(r) {
+    names(r) = as.character(Dates_extracted)
+    r
+  })
 
+  # round if n_round is specified
+  if (!is.null(n_round)) {
+    Ensamble = lapply(Ensamble, function(r) round(r, n_round))
+  }
+  # names in list
+  names(Ensamble) <- sprintf("%g km", as.numeric(names(weights_list)) / 1000)
   ##############################################################################
   #                           Perform validation if established                #
   ##############################################################################
-  if (training != 1 | !is.null(stat_validation)) {
-    final_results <- lapply(names(Ensamble), function(name) {
+  if (training != 1 || !is.null(stat_validation)) {
+    final_results <- lapply(names(Ensamble), function(rn) {
       .validate(
         test_cords = data_val$test_cords,
         test_data = data_val$test_data,
         crss = coord.ref,
-        Ensamble = Ensamble[[name]],
+        Ensamble = Ensamble[[rn]],
         Rain_threshold = Rain_threshold
       )
-    }) |> stats::setNames(names(Ensamble))
+    })
+    names(final_results) <- names(Ensamble)
   }
+
   ##############################################################################
   #                           Save the model if necessary                      #
   ##############################################################################
-  if (save_model) {
+  if (isTRUE(save_model)) {
     message("Model saved successfully")
     names_saving <- paste0("Radius_", names(Ensamble), ".nc")
-    invisible(
-      lapply(seq_along(Ensamble), function(i) {
-        terra::writeCDF(
-          Ensamble[[i]],
-          filename = names_saving[i],
-          overwrite = TRUE
-        )
-      })
-    )
+    invisible(lapply(seq_along(Ensamble), function(i) {
+      terra::writeCDF(
+        Ensamble[[i]],
+        filename = names_saving[i],
+        overwrite = TRUE
+      )
+    }))
   }
   ##############################################################################
   #                                      Return                                #
   ##############################################################################
-  if (training != 1 | !is.null(stat_validation)) return(list(Ensamble = Ensamble, Validation = final_results))
-  if (training == 1 & is.null(stat_validation)) return(Ensamble)
-
+  if (training != 1 || !is.null(stat_validation)) {
+    return(list(Ensamble = Ensamble, Validation = final_results))
+  } else {
+    return(Ensamble)
+  }
 } # End function cressman

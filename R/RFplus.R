@@ -150,43 +150,78 @@
 #' @author
 #'  Jonnathan Augusto landi Bermeo, jonnathan.landi@outlook.com
 #' @export
-RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE,
-                  ntree = 2000, seed = 123, training = 1, stat_validation = NULL,
-                  Rain_threshold = NULL, method = c("RQUANT","QUANT","none"),
-                  ratio = 15, save_model = FALSE, name_save = NULL) {
-
+RFplus <- function(
+  BD_Obs,
+  BD_Coord,
+  Covariates,
+  n_round = NULL,
+  wet.day = FALSE,
+  ntree = 2000,
+  seed = 123,
+  training = 1,
+  stat_validation = NULL,
+  Rain_threshold = NULL,
+  method = c("RQUANT", "QUANT", "none"),
+  ratio = 15,
+  save_model = FALSE,
+  name_save = NULL
+) {
   ##############################################################################
   #                      Check the input data of the covariates                #
   ##############################################################################
   # Verify that covariates is a list
-  if (!inherits(Covariates, "list")) stop("Covariates must be a list.")
+  if (!inherits(Covariates, "list")) {
+    stop("Covariates must be a list.")
+  }
 
   # Verify that the covariates are type SpatRaster
-  if (!all(sapply(Covariates, function(x) inherits(x, "SpatRaster")))) stop("The covariates must be of type SpatRaster.")
+  if (!all(sapply(Covariates, function(x) inherits(x, "SpatRaster")))) {
+    stop("The covariates must be of type SpatRaster.")
+  }
 
   # Verify the extent of covariates
   ext_list = lapply(Covariates, terra::ext)
-  if (!all(sapply(ext_list, function(x) x == ext_list[[1]]))) stop("The extension of the covariates are different (all extensions should be similar).")
+  if (!all(sapply(ext_list, function(x) x == ext_list[[1]]))) {
+    stop(
+      "The extension of the covariates are different (all extensions should be similar)."
+    )
+  }
 
   # Verify the crc of covariates
-  if (length(unique(vapply(Covariates, terra::crs, character(1)))) > 1) stop("The crs of the covariates are different (all crs should be similar).")
+  if (length(unique(vapply(Covariates, terra::crs, character(1)))) > 1) {
+    stop("The crs of the covariates are different (all crs should be similar).")
+  }
 
   ##############################################################################
   #                    Check input data from on-site stations                  #
   ##############################################################################
   # Verify the BD_Obs is data.table
-  if (!inherits(BD_Obs, c("data.table", "data.frame"))) stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
+  if (!inherits(BD_Obs, c("data.table", "data.frame"))) {
+    stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
+  }
   names(BD_Obs)[1] <- "Date"
 
   # Verify the columns of BD_Coord
-  if (!inherits(BD_Coord, c("data.table", "data.frame"))) stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
+  if (!inherits(BD_Coord, c("data.table", "data.frame"))) {
+    stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
+  }
 
   # Verify that all dates have at least one entry recorded
-  Dates_NA <- BD_Obs[apply(BD_Obs[, .SD, .SDcols = -1], 1, function(x) all(is.na(x))), Date]
-  if (length(Dates_NA) > 0) stop(paste0("No data was found for the dates: ", paste(Dates_NA, collapse = ", ")))
+  Dates_NA <- BD_Obs[
+    apply(BD_Obs[, .SD, .SDcols = -1], 1, function(x) all(is.na(x))),
+    Date
+  ]
+  if (length(Dates_NA) > 0) {
+    stop(paste0(
+      "No data was found for the dates: ",
+      paste(Dates_NA, collapse = ", ")
+    ))
+  }
 
   # Check that the coordinate names appear in the observed data
-  if (!all(BD_Coord$Cod %in% setdiff(names(BD_Obs), "Date"))) stop("The names of the coordinates do not appear in the observed data.")
+  if (!all(BD_Coord$Cod %in% setdiff(names(BD_Obs), "Date"))) {
+    stop("The names of the coordinates do not appear in the observed data.")
+  }
 
   ##############################################################################
   #                Checking the input parameters for quantile mapping          #
@@ -200,7 +235,11 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
   # Check if there is a DEM layer
   nlyr_covs <- sapply(Covariates, function(x) terra::nlyr(x))
   index_dem <- which(nlyr_covs == 1)
-  if (length(index_dem) == 0) stop("A single layer covariate was not found. Possibly the DEM was not entered.")
+  if (length(index_dem) == 0) {
+    stop(
+      "A single layer covariate was not found. Possibly the DEM was not entered."
+    )
+  }
 
   # Identify the DEM layer
   nlyrs_tots <- which(nlyr_covs != 1)
@@ -210,12 +249,18 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
   #                          Verify if validation is to be done                #
   ##############################################################################
   if (training != 1 | !is.null(stat_validation)) {
-    data_val = .select_data(BD_Obs, BD_Coord, training = training,
-                            stat_validation = stat_validation)
+    data_val = .select_data(
+      BD_Obs,
+      BD_Coord,
+      training = training,
+      stat_validation = stat_validation
+    )
     train_data = data_val$train_data
     train_cords = data_val$train_cords
   } else {
-    message("The training parameter was not entered. The model will be trained with all the data.")
+    message(
+      "The training parameter was not entered. The model will be trained with all the data."
+    )
     train_data <- BD_Obs
     train_cords <- BD_Coord
   }
@@ -239,18 +284,28 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
   data.table::setDT(Points_Train)
 
   Points_Train <- unique(Points_Train, by = "Cod")[, .(Cod, X, Y, Z)]
-  Points_VectTrain <- terra::vect(Points_Train, geom = c("X", "Y"), crs = terra::crs(Sample_lyrs))
+  Points_VectTrain <- terra::vect(
+    Points_Train,
+    geom = c("X", "Y"),
+    crs = terra::crs(Sample_lyrs)
+  )
 
   # Calculate the Distance Euclidean
-  distance_ED <- stats::setNames(lapply(1:nrow(Points_VectTrain), function(i) {
-    terra::distance(DEM, Points_VectTrain[i, ], rasterize = FALSE)
-  }), Points_VectTrain$Cod)
+  distance_ED <- stats::setNames(
+    lapply(1:nrow(Points_VectTrain), function(i) {
+      terra::distance(DEM, Points_VectTrain[i, ], rasterize = FALSE)
+    }),
+    Points_VectTrain$Cod
+  )
 
-  difference_altitude <- stats::setNames(lapply(1:nrow(Points_VectTrain), function(i) {
-    z_station = Points_VectTrain$Z[i]
-    diff_alt = DEM[[1]] - z_station
-    return(diff_alt)
-  }), Points_VectTrain$Cod)
+  difference_altitude <- stats::setNames(
+    lapply(1:nrow(Points_VectTrain), function(i) {
+      z_station = Points_VectTrain$Z[i]
+      diff_alt = DEM[[1]] - z_station
+      return(diff_alt)
+    }),
+    Points_VectTrain$Cod
+  )
 
   ##############################################################################
   #                    Progressive correction methodology                      #
@@ -274,11 +329,11 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
 
   # Generate data for prediction
   name_covs <- names(Covariates)[nlyr_covs != 1]
-  data_simSat = lapply(name_covs, function (name) {
+  data_simSat = lapply(name_covs, function(name) {
     raster = Covariates[[name]]
     dt = data.table::data.table(terra::extract(raster, y = Points_VectTrain))
     dt[, Cod := Points_VectTrain$Cod]
-    dt[,ID := NULL]
+    dt[, ID := NULL]
     dt = data.table::transpose(dt, make.names = "Cod")
     dt = cbind(
       Date = Dates_extracted,
@@ -294,13 +349,23 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
     return(dt)
   })
 
-  dt_sim =  Reduce(function(x, y) merge(x, y, by = c("Date", "Cod"), all = TRUE), data_simSat)
+  dt_sim = Reduce(
+    function(x, y) merge(x, y, by = c("Date", "Cod"), all = TRUE),
+    data_simSat
+  )
   dt_merged = merge(dt_sim, data_cov, by = "Cod", all.x = TRUE)
-  dt_final = merge(dt_merged, training_data[, .(Date, Cod, var)], by = c("Date", "Cod"), all.x = TRUE)
+  dt_final = merge(
+    dt_merged,
+    training_data[, .(Date, Cod, var)],
+    by = c("Date", "Cod"),
+    all.x = TRUE
+  )
   ##############################################################################
   RF_Modelplus = function(date_P, Cov_pred_combined) {
     train_RF = dt_final[Date == date_P, ]
-    if (train_RF[, sum(var, na.rm = TRUE)] == 0) return(Sample_lyrs)
+    if (train_RF[, sum(var, na.rm = TRUE)] == 0) {
+      return(Sample_lyrs)
+    }
 
     features_ff <- setdiff(names(train_RF), c("Cod", "Date"))
     set.seed(seed)
@@ -312,13 +377,19 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
     ) |>
       suppressWarnings()
 
-    val_RF = train_RF[, .(Cod, Obs = var, sim = stats::predict(Model_P1, .SD)), .SDcols = features_ff]
+    val_RF = train_RF[,
+      .(Cod, Obs = var, sim = stats::predict(Model_P1, .SD)),
+      .SDcols = features_ff
+    ]
     val_RF[, residuals := Obs - sim]
 
     # Model post-correction
     dt.train_resi <- data.table(
       residuals = val_RF$residuals,
-      train_RF[, setdiff(names(train_RF), c("Cod", "Date", "var")), with = FALSE]
+      train_RF[,
+        setdiff(names(train_RF), c("Cod", "Date", "var")),
+        with = FALSE
+      ]
     )
 
     set.seed(seed)
@@ -340,7 +411,9 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
   pbapply::pboptions(type = "timer", use_lb = F, style = 1, char = "=")
   message("Analysis in progress. Please wait...")
   raster_Model <- pbapply::pblapply(Dates_extracted, function(date_P) {
-    Cov_pred <- lapply(Cov_pred, function(x) x[[match(date_P, Dates_extracted)]])
+    Cov_pred <- lapply(Cov_pred, function(x) {
+      x[[match(date_P, Dates_extracted)]]
+    })
     Cov_pred_combined <- c(Cov_pred, list(day_COV))
     Cov_pred_combined <- terra::rast(Cov_pred_combined)
     ff = setdiff(names(dt_final), c("Cod", "Date", "var"))
@@ -352,10 +425,17 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
   # Model of the QM or QDM correction ------------------------------------------
   if (method == "none") {
     message("Analysis completed, QUANT or RQUANT correction phase not applied.")
-  } else if (method %in% c("RQUANT","QUANT")) {
-    message(paste0("Analysis in progress: Stage 2 of 2. Correction by: ", method, ". Please wait..."))
+  } else if (method %in% c("RQUANT", "QUANT")) {
+    message(paste0(
+      "Analysis in progress: Stage 2 of 2. Correction by: ",
+      method,
+      ". Please wait..."
+    ))
 
-    data_CM <- data.table::data.table(terra::extract(Ensamble, Points_VectTrain))
+    data_CM <- data.table::data.table(terra::extract(
+      Ensamble,
+      Points_VectTrain
+    ))
     data_CM[, ID := as.numeric(as.character(ID))]
 
     names_train = unique(training_data[, .(Cod)])
@@ -369,7 +449,10 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
 
     data_CM <- data.table::data.table(t(data_CM[, -1]))
     colnames(data_CM) <- names
-    data_CM <- data.table::data.table(data.table::data.table(Date = Dates_extracted), data_CM)
+    data_CM <- data.table::data.table(
+      data.table::data.table(Date = Dates_extracted),
+      data_CM
+    )
 
     common_columns <- setdiff(names(data_CM), c("ID", "Date"))
 
@@ -381,21 +464,36 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
         all = FALSE
       )
 
-      dt[, c("Obs", "Sim") := lapply(.SD, as.numeric), .SDcols = c("Obs", "Sim")]
+      dt[,
+        c("Obs", "Sim") := lapply(.SD, as.numeric),
+        .SDcols = c("Obs", "Sim")
+      ]
 
       return(stats::na.omit(dt))
     })
 
     names(res_interpolation) <- common_columns
-    data_complete <- data.table::data.table(terra::as.data.frame(Ensamble, xy = TRUE))
-    data.table::setnames(data_complete, new = c("x", "y", as.character(Dates_extracted)))
+    data_complete <- data.table::data.table(terra::as.data.frame(
+      Ensamble,
+      xy = TRUE
+    ))
+    data.table::setnames(
+      data_complete,
+      new = c("x", "y", as.character(Dates_extracted))
+    )
 
     points <- train_cords[Cod %in% names, ]
-    points <- terra::vect(points, geom = c("X", "Y"), crs = terra::crs(Sample_lyrs))
+    points <- terra::vect(
+      points,
+      geom = c("X", "Y"),
+      crs = terra::crs(Sample_lyrs)
+    )
     dat_final <- data.table::data.table()
 
     process_data <- function(method_fun, doQmap_fun) {
-      cuantiles <- lapply(res_interpolation, function(x) method_fun(x$Obs, x$Sim, method = method, wet.day = wet.day))
+      cuantiles <- lapply(res_interpolation, function(x) {
+        method_fun(x$Obs, x$Sim, method = method, wet.day = wet.day)
+      })
       message("Applying correction method. This may take a while...")
 
       dat_final <- pblapply(seq_len(nrow(data_complete)), function(i) {
@@ -405,15 +503,25 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
         Points_VectTrain
 
         distances <- terra::distance(
-          terra::vect(data.table::data.table(x, y), geom = c("x", "y"), crs = terra::crs(Sample_lyrs)),
-          points, unit = "km"
+          terra::vect(
+            data.table::data.table(x, y),
+            geom = c("x", "y"),
+            crs = terra::crs(Sample_lyrs)
+          ),
+          points,
+          unit = "km"
         )
 
-        distances <- data.table::data.table(dist = as.vector(distances), Cod = points$Cod)
+        distances <- data.table::data.table(
+          dist = as.vector(distances),
+          Cod = points$Cod
+        )
 
         if (any(distances$dist <= ratio)) {
           name <- distances[which.min(distances$dist), Cod]
-          data <- data.table::data.table(Sim = t(data_complete[i, -c("x", "y")]))
+          data <- data.table::data.table(
+            Sim = t(data_complete[i, -c("x", "y")])
+          )
           data_corregido <- doQmap_fun(data$Sim.V1, cuantiles[[name]])
           data_sat <- cbind(data_complete[i, c("x", "y")], t(data_corregido))
           colnames(data_sat) <- c("x", "y", as.character(Dates_extracted))
@@ -429,9 +537,15 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
 
     # Apply the correction method
     if (method == "QUANT") {
-      dat_final = process_data(method_fun = qmap::fitQmapQUANT, doQmap_fun = qmap::doQmapQUANT)
+      dat_final = process_data(
+        method_fun = qmap::fitQmapQUANT,
+        doQmap_fun = qmap::doQmapQUANT
+      )
     } else {
-      dat_final <- process_data(method_fun = qmap::fitQmapRQUANT, doQmap_fun = qmap::doQmapRQUANT)
+      dat_final <- process_data(
+        method_fun = qmap::fitQmapRQUANT,
+        doQmap_fun = qmap::doQmapRQUANT
+      )
     }
 
     Ensamble <- terra::rast(dat_final, crs = terra::crs(Sample_lyrs))
@@ -444,23 +558,38 @@ RFplus <- function(BD_Obs, BD_Coord, Covariates, n_round = NULL, wet.day = FALSE
   if (training != 1 | !is.null(stat_validation)) {
     test_cords = data_val$test_cords
     test_data = data_val$test_data
-    final_results <- .validate(test_cords, test_data, crss = terra::crs(Sample_lyrs),
-                               Ensamble, Rain_threshold = Rain_threshold)
+    final_results <- .validate(
+      test_cords,
+      test_data,
+      crss = terra::crs(Sample_lyrs),
+      Ensamble,
+      Rain_threshold = Rain_threshold
+    )
   }
 
-  if (!is.null(n_round)) Ensamble <- terra::app(Ensamble, \(x) round(x, n_round))
-  if (wet.day != FALSE) Ensamble <- terra::app(Ensamble, \(x) data.table::fifelse(x < wet.day, 0, x))
+  if (!is.null(n_round)) {
+    Ensamble <- terra::app(Ensamble, \(x) round(x, n_round))
+  }
+  if (wet.day != FALSE) {
+    Ensamble <- terra::app(Ensamble, \(x) {
+      data.table::fifelse(x < wet.day, 0, x)
+    })
+  }
   names(Ensamble) <- as.character(Dates_extracted)
   ##############################################################################
   #                           Save the model if necessary                      #
   ##############################################################################
   if (save_model) {
     message("Model saved successfully")
-    if (is.null(name_save)) name_save = "Model_RFplus"
+    if (is.null(name_save)) {
+      name_save = "Model_RFplus"
+    }
     name_saving <- paste0(name_save, ".nc")
-    terra::writeCDF(Ensamble, filename = name_saving, overwrite=TRUE)
+    terra::writeCDF(Ensamble, filename = name_saving, overwrite = TRUE)
   }
 
-  if (training != 1 | !is.null(stat_validation)) return(list(Ensamble = Ensamble, Validation = final_results))
+  if (training != 1 | !is.null(stat_validation)) {
+    return(list(Ensamble = Ensamble, Validation = final_results))
+  }
   if (training == 1 & is.null(stat_validation)) return(Ensamble)
 } # End Rfplus functio
