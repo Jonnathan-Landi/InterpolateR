@@ -488,4 +488,164 @@ testthat::test_that("Kriging_Ordinary saves model with default name", {
   expected_file <- file.path(temp_dir, "Model_Kriging.nc")
   testthat::expect_true(file.exists(expected_file), info = expected_file)
 })
-# End of tests for Kriging_Ordinary
+##############################################################################
+#                   TESTS FOR EDGE CASES - 100% COVERAGE                    #
+##############################################################################
+# 17. Edge case: Less than 2 valid stations (activates first red fragment) ----
+testthat::test_that("Kriging_Ordinary handles < 2 valid stations correctly", {
+  testthat::skip_on_cran()
+
+  # Create data with only one valid station
+  BD_Obs_single <- data.table::copy(BD_Obs)[1:3] # Take first 3 rows
+  BD_Obs_single[, `:=`(
+    M001 = c(5.0, NA_real_, NA_real_),  # Only first date has valid data
+    M002 = c(NA_real_, NA_real_, NA_real_),  # All NA
+    M003 = c(NA_real_, NA_real_, NA_real_)   # All NA
+  )]
+
+  BD_Coord_single <- BD_Coord[Cod %in% c("M001", "M002", "M003")]
+
+  # This should activate: sum(valid_idx) < 2 case
+  out <- Kriging_Ordinary(
+    BD_Obs_single,
+    BD_Coord_single,
+    shapefile,
+    grid_resolution = 5,
+    variogram_model = "exponential",
+    n_lags = 15,
+    min_stations = 2,
+    n_round = 1,
+    training = 1
+  )
+
+  testthat::expect_true(inherits(out, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out), nrow(BD_Obs_single))
+})
+
+# 18. Edge case: All values identical (activates constant values fragment) ----
+testthat::test_that("Kriging_Ordinary handles identical values correctly", {
+  testthat::skip_on_cran()
+
+  # Create data where all stations have identical values
+  BD_Obs_constant <- data.table::copy(BD_Obs)[1:2] # Take first 2 rows
+  BD_Coord_constant <- BD_Coord[1:4] # Take first 4 stations
+
+  # Set all values to be identical
+  for (col in names(BD_Obs_constant)[-1]) {
+    BD_Obs_constant[, (col) := 10.5]  # All stations = 10.5
+  }
+
+  # This should activate: length(unique(values[valid_idx])) == 1 case
+  out <- Kriging_Ordinary(
+    BD_Obs_constant,
+    BD_Coord_constant,
+    shapefile,
+    grid_resolution = 5,
+    variogram_model = "exponential",
+    n_lags = 10,
+    min_stations = 2,
+    n_round = 1,
+    training = 1
+  )
+
+  testthat::expect_true(inherits(out, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out), nrow(BD_Obs_constant))
+})
+
+# 19. Edge case: All stations NA (activates "else 0" fragment) ---------------
+testthat::test_that("Kriging_Ordinary handles all NA stations correctly", {
+  testthat::skip_on_cran()
+
+  # Create data where all stations are NA for some dates
+  BD_Obs_all_na <- data.table::copy(BD_Obs)[1:3]
+  BD_Coord_all_na <- BD_Coord[1:3]
+
+  # Set all values to NA for all dates
+  for (col in names(BD_Obs_all_na)[-1]) {
+    BD_Obs_all_na[, (col) := NA_real_]
+  }
+
+  # This should activate: length(available_values) > 0) mean(available_values) else 0
+  out <- Kriging_Ordinary(
+    BD_Obs_all_na,
+    BD_Coord_all_na,
+    shapefile,
+    grid_resolution = 5,
+    variogram_model = "exponential",
+    n_lags = 10,
+    min_stations = 2,
+    n_round = 1,
+    training = 1
+  )
+
+  testthat::expect_true(inherits(out, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out), nrow(BD_Obs_all_na))
+})
+
+# 20. Edge case: Only one station with valid data (activates single station fragment) ----
+testthat::test_that("Kriging_Ordinary handles single valid station correctly", {
+  testthat::skip_on_cran()
+
+  # Create data with only one station having valid data
+  BD_Obs_one <- data.table::copy(BD_Obs)[1:2]
+  BD_Coord_one <- BD_Coord[1:4]
+
+  # Set only first station to have data, others NA
+  for (i in 2:ncol(BD_Obs_one)) {
+    if (i == 2) {
+      BD_Obs_one[[i]] <- c(15.5, 20.3)  # Only first station has data
+    } else {
+      BD_Obs_one[[i]] <- NA_real_       # All others NA
+    }
+  }
+
+  # This should activate: length(available_stations) < 2 case
+  out <- Kriging_Ordinary(
+    BD_Obs_one,
+    BD_Coord_one,
+    shapefile,
+    grid_resolution = 5,
+    variogram_model = "spherical",
+    n_lags = 10,
+    min_stations = 2,
+    n_round = 1,
+    training = 1
+  )
+
+  testthat::expect_true(inherits(out, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out), nrow(BD_Obs_one))
+})
+
+# 21. Edge case: All values zero (activates zero values fragment) ------------
+testthat::test_that("Kriging_Ordinary handles all zero values correctly", {
+  testthat::skip_on_cran()
+
+  # Create data where all values are zero
+  BD_Obs_zero <- data.table::copy(BD_Obs)[1:2]
+  BD_Coord_zero <- BD_Coord[1:4]
+
+  # Set all values to zero
+  for (col in names(BD_Obs_zero)[-1]) {
+    BD_Obs_zero[, (col) := 0.0]
+  }
+
+  # This should activate: all(data_obs$var == 0) case in process_day
+  out <- Kriging_Ordinary(
+    BD_Obs_zero,
+    BD_Coord_zero,
+    shapefile,
+    grid_resolution = 5,
+    variogram_model = "gaussian",
+    n_lags = 10,
+    min_stations = 2,
+    n_round = 1,
+    training = 1
+  )
+
+  testthat::expect_true(inherits(out, "SpatRaster"))
+  testthat::expect_equal(terra::nlyr(out), nrow(BD_Obs_zero))
+})
+
+##############################################################################
+#                        END OF COVERAGE TESTS                              #
+##############################################################################
