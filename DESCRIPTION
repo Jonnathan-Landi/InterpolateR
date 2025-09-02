@@ -1,8 +1,14 @@
 Package: InterpolateR
 Title: A Comprehensive Toolkit for Fast and Efficient Spatial Interpolation
-Version: 1.3-4
-Authors@R: person("Jonnathan", "Landi", email = "jonnathan.landi@outlook.com",
-           role = c("aut", "cre", "cph"), comment = c(ORCID = "0009-0003-3162-6647"))
+Version: 1.4-3
+Authors@R: c(
+    person("Jonnathan", "Landi", email = "jonnathan.landi@outlook.com",
+           role = c("aut", "cre", "cph"),
+           comment = c(ORCID = "0009-0003-3162-6647")),
+    person("Marco", "Mogro", email = "marcov.mogro@ucuenca.edu.ec",
+           role = c("aut"),
+           comment = c(ORCID = "0009-0007-1802-9417"))
+  )
 Maintainer: Jonnathan Landi <jonnathan.landi@outlook.com>                
 Description: Spatial interpolation toolkit designed for environmental and geospatial applications. It includes a range of methods, from traditional techniques to advanced machine learning approaches, ensuring accurate and efficient estimation of values in unobserved locations.
 License: GPL (>=3)

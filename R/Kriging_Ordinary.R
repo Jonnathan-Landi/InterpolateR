@@ -154,7 +154,21 @@ Kriging_Ordinary <- function(
     stat_validation = NULL,
     Rain_threshold = NULL,
     save_model = FALSE,
-    name_save = NULL
+    name_save = NULL,
+  BD_Obs,
+  BD_Coord,
+  shapefile,
+  grid_resolution,
+  variogram_model = c("exponential", "spherical", "gaussian", "linear"),
+  max_dist = NULL,
+  n_lags = 15,
+  min_stations = 2,
+  n_round = NULL,
+  training = 1,
+  stat_validation = NULL,
+  Rain_threshold = NULL,
+  save_model = FALSE,
+  name_save = NULL
 ) {
   ##############################################################################
   #                               Check input data                             #
@@ -458,7 +472,7 @@ Kriging_Ordinary <- function(
 
       # Check matrix condition
       use_idw <- (det(gamma_matrix[1:n_stations, 1:n_stations]) == 0 ||
-                    kappa(gamma_matrix[1:n_stations, 1:n_stations]) > 1e12)
+        kappa(gamma_matrix[1:n_stations, 1:n_stations]) > 1e12)
     }
 
     # Prediction loop (optimized)

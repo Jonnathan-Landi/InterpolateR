@@ -11,6 +11,7 @@ Cressman(
   grid_resolution,
   search_radius,
   training = 1,
+  n_round = NULL,
   stat_validation = NULL,
   Rain_threshold = NULL,
   save_model = FALSE
@@ -58,6 +59,9 @@ The shapefile must be of class \code{SpatVector} (from the \code{terra} package)
 
 \item{training}{Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 \% of the data will be used for training and 20 \% for validation.
 If you do not want to perform validation, set training = 1. (Default training = 1).}
+
+\item{n_round}{An integer specifying the number of decimal places to round the interpolated results.
+If set to \code{NULL}, all decimal places will be preserved. .}
 
 \item{stat_validation}{A character vector specifying the names of the stations to be used for validation.
 This option should only be filled in when it is desired to manually enter the stations used for validation. If this parameter is NULL, and the formation is different from 1, a validation will be performed using random stations.
@@ -154,15 +158,15 @@ shp_path = system.file("extdata", "study_area.shp", package = "InterpolateR")
 shapefile = terra::vect(shp_path)
  # Perform the interpolation
 Interpolated_Cressman <- Cressman(BD_Obs, BD_Coord, shapefile, grid_resolution = 5,
-                                  search_radius = 10, training = 1,
+                                  search_radius = 10, training = 1, n_round = 2,
                                   stat_validation = "M001", Rain_threshold = NULL,
                                  save_model = FALSE)
 # Results ("Ensamble with 10 km radius")
-Radius_10 = Interpolated_Cressman$Ensamble$`10000`
+Radius_10 <- Interpolated_Cressman$Ensamble$`10 km`
 
 # Validation statistics
 # Validation results with a 10 km radius
-Validation_results_10 = Interpolated_Cressman$Validation$`10000`
+Validation_results_10 = Interpolated_Cressman$Validation$`10 km`
 }
 }
 \references{

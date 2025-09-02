@@ -17,12 +17,12 @@ utils::globalVariables(c(
   "y", # Variable created dynamically in IDW
   "observed", # Variable created dynamically in Intr_Connections_module
   "estimated", # Variable created dynamically in Intr_Connections_module
-  "Obs",  # Variable created dynamically in Intr_Connections_module
+  "Obs", # Variable created dynamically in Intr_Connections_module
   "Sim", # Variable created dynamically in Intr_Connections_module,
   "var", # Variable created dynamically in IDW and Cressman
   "..features_ff", # Variable created dynamically in RFmerge and RFplus
   "residuals", # Variable created dynamically in RFplus
-  "sim"  # Variable created dynamically in RFplus
+  "sim" # Variable created dynamically in RFplus
 ))
 
 .onAttach <- function(libname, pkgname) {
@@ -42,7 +42,12 @@ utils::globalVariables(c(
 
   # Mostrar mensajes
   packageStartupMessage("+--------------------------------------------+")
-  packageStartupMessage(paste0("| Installed version of ", pkgname, ": ", installed_version))
+  packageStartupMessage(paste0(
+    "| Installed version of ",
+    pkgname,
+    ": ",
+    installed_version
+  ))
 
   if (!is.na(cran_version)) {
     packageStartupMessage(paste0("| Version available on CRAN: ", cran_version))
@@ -54,7 +59,9 @@ utils::globalVariables(c(
       packageStartupMessage(paste0("| install.packages(\"", pkgname, "\")"))
     }
   } else {
-    packageStartupMessage("| The version available on CRAN could not be consulted.")
+    packageStartupMessage(
+      "| The version available on CRAN could not be consulted."
+    )
   }
 
   packageStartupMessage("+--------------------------------------------+")
