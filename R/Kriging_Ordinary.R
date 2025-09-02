@@ -73,7 +73,7 @@
 #'
 #' # Perform the interpolation
 #' Interpolated_data <- Kriging_Ordinary(BD_Obs, BD_Coord, shapefile,
-#'   grid_resolution = 5, variogram_model = c("exponential", "spherical", "gaussian", "linear"),
+#'   grid_resolution = 5, variogram_model = "linear",
 #'   max_dist = NULL, n_lags = 15, n_round = 1, training = 0.8,
 #'   Rain_threshold = NULL, stat_validation = NULL,
 #'   save_model = FALSE, name_save = NULL)
