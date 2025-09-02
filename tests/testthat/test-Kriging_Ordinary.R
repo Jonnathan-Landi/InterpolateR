@@ -1,7 +1,7 @@
 # Data used for testing Kriging Ordinary
 # Date of test creation: 2025-09-01
 # Test update date: 2025-09-01
-
+#
 # Data input
 data("BD_Obs", package = "InterpolateR")
 data("BD_Coord", package = "InterpolateR")
