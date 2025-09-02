@@ -7,6 +7,7 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+
 # Introduction
 
 `InterpolateR` is one of the most efficient R packages for spatial interpolation. It leverages vectorized operations to maximize computational efficiency while maintaining high accuracy in interpolation tasks. The package integrates both traditional and advanced interpolation methods, making it a versatile tool for a wide range of spatial analysis applications.
@@ -140,6 +141,74 @@ The Cressman method typically applies an iterative approach, where the search ra
 
 -   The `search_radius` should be defined as a numeric vector representing the influence range in kilometers (`km`) for each interpolation iteration. For example, setting: `search_radius = c(50, 20, 10)`.
 -   Since the algorithm works in the UTM coordinate system, make sure that the `grid_resolution` is entered in km.
+
+## Ordinary Kriging
+
+Ordinary Kriging is a geostatistical interpolation technique that provides the best linear unbiased estimator (BLUE) for spatial data. Unlike deterministic methods such as IDW, Kriging incorporates the spatial correlation structure of the data through variogram modeling to determine optimal weights.
+
+The method is based on the theory of regionalized variables and assumes that the spatial variation of the studied phenomenon can be characterized through a covariance function or variogram. This approach allows not only to predict values at unsampled locations, but also to estimate the uncertainty associated with each prediction.
+
+The Ordinary Kriging estimator is defined as:
+
+$$
+\hat{Z}(s_0) = \sum_{i=1}^{n} \lambda_i Z(s_i)
+$$
+
+where:
+
+-   $\hat{Z}(s_0)$ is the estimated value at the unknown point.
+-   $Z(s_i)$ are the known values.
+-   $\lambda_i$ are the Kriging weights that sum to 1.
+-   $n$ is the total number of known points used.
+
+The Kriging weights are obtained by solving the Kriging system:
+
+$$
+\begin{bmatrix} \Gamma & \mathbf{1} \\ \mathbf{1}^T & 0 \end{bmatrix} \begin{bmatrix} \boldsymbol{\lambda} \\ \mu \end{bmatrix} = \begin{bmatrix} \boldsymbol{\gamma} \\ 1 \end{bmatrix}
+$$
+
+where:
+
+-   $\Gamma$ is the variogram matrix between observation points.
+-   $\boldsymbol{\gamma}$ is the variogram vector between prediction and observation points.
+-   $\mu$ is the Lagrange multiplier that ensures unbiasedness.
+
+### Variogram Models
+
+InterpolateR includes four main variogram models:
+
+-   **Exponential**: $\gamma(h) = \sigma^2(1 - \exp(-3h/a))$ for $h > 0$
+
+-   **Spherical**: $\gamma(h) = \sigma^2(1.5h/a - 0.5(h/a)^3)$ for $h \leq a$, $\sigma^2$ for $h > a$
+
+-   **Gaussian**: $\gamma(h) = \sigma^2(1 - \exp(-3(h/a)^2))$ for $h > 0$
+
+-   **Linear**: $\gamma(h) = \sigma^2 \cdot h/a$ for $h \leq a$, $\sigma^2$ for $h > a$
+
+where $h$ is the distance, $\sigma^2$ is the structural variance (sill), and $a$ is the correlation range.
+
+### Algorithm Considerations
+
+The Ordinary Kriging algorithm in InterpolateR includes several important features:
+
+-   **Automatic variogram fitting**: The system empirically calculates the variogram and automatically fits the specified theoretical model using non-linear optimization.
+
+-   **Robust data handling**: When there is insufficient data or ill-conditioned matrices, the algorithm automatically falls back to Inverse Distance Weighting (IDW) as a backup method.
+
+-   **Configurable parameters**:
+
+    -   `variogram_model`: Specifies the type of variogram model ("exponential", "spherical", "gaussian", "linear")
+    -   `max_dist`: Maximum distance for variogram calculation and prediction
+    -   `n_lags`: Number of distance intervals for the empirical variogram
+    -   `min_stations`: Minimum number of stations required for interpolation
+
+### Important Considerations
+
+-   The `grid_resolution` parameter must be defined in kilometers (km) since the algorithm works in the UTM coordinate system.
+-   The `max_dist` parameter defines the maximum influence distance in meters. If set to `NULL`, it will be automatically calculated as half the maximum distance between stations.
+-   For datasets with few points or constant values, the algorithm implements robust handling strategies to avoid computational errors.
+
+Since the algorithms are designed to work in the UTM system, make sure that `grid_resolution` is entered in km.
 
 ## RFplus
 
