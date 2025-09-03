@@ -10,8 +10,6 @@ utils::globalVariables(c(
   "Y", # Variable created dynamically in IDW
   "Z", # Variable created dynamically in IDW
   "ID", # Variable created dynamically in IDW
-  "sum_d", # Variable created dynamically in IDW
-  "sum_n", # Variable created dynamically in IDW
   "value", # Variable created dynamically in IDW
   "x", # Variable created dynamically in IDW
   "y", # Variable created dynamically in IDW
@@ -22,7 +20,9 @@ utils::globalVariables(c(
   "var", # Variable created dynamically in IDW and Cressman
   "..features_ff", # Variable created dynamically in RFmerge and RFplus
   "residuals", # Variable created dynamically in RFplus
-  "sim" # Variable created dynamically in RFplus
+  "sim", # Variable created dynamically in RFplus
+  "..cols_coords", # Variable created dynamically in IDW
+  "cell" # Variable created dynamically in IDW
 ))
 
 .onAttach <- function(libname, pkgname) {
