@@ -5,6 +5,7 @@
 - The “n_round” functionality has been added to the Cressman algorithm, which allows the final layers to be rounded.
 ### Bug Fixed
 - An error that occurred if the “Z” column was not passed in BD_Coords when it was not mandatory has been corrected.
+- Add interpolation method Kriging Ordinary.
 
 
 # Version 1.3-4 (Development)
