@@ -939,3 +939,156 @@ testthat::test_that("Edge cases work correctly with validation enabled", {
 ##############################################################################
 #                        END OF COVERAGE TESTS                              #
 ##############################################################################
+# Tests adicionales
+
+# Test 25: Caso con datos insuficientes (< 2 estaciones válidas)
+test_that("Kriging handles insufficient data cases correctly", {
+  # Crear datos con solo 1 estación válida
+  BD_Obs_insufficient <- data.table::data.table(
+    Date = as.Date(c("2015-01-01", "2015-01-02")),
+    ST001 = c(5.0, 3.0),
+    ST002 = c(NA, NA),  # Todas las demás estaciones son NA
+    ST003 = c(NA, NA)
+  )
+
+  BD_Coord_insufficient <- data.table::data.table(
+    Cod = c("ST001", "ST002", "ST003"),
+    X = c(500000, 501000, 502000),
+    Y = c(9500000, 9501000, 9502000)
+  )
+
+  # Ejecutar Kriging con datos insuficientes
+  result <- Kriging_Ordinary(
+    BD_Obs = BD_Obs_insufficient,
+    BD_Coord = BD_Coord_insufficient,
+    shapefile = shapefile,
+    grid_resolution = 10,
+    variogram_model = "exponential"
+  )
+
+  # Verificar que devuelve un resultado válido
+  expect_s4_class(result, "SpatRaster")
+  expect_true(terra::nlyr(result) == 2)
+})
+
+# Test 26: Caso con valores constantes (todas las estaciones tienen el mismo valor)
+test_that("Kriging handles constant values correctly", {
+  # Crear datos donde todas las estaciones tienen el mismo valor
+  BD_Obs_constant <- data.table::data.table(
+    Date = as.Date(c("2015-01-01", "2015-01-02")),
+    ST001 = c(10.0, 15.0),
+    ST002 = c(10.0, 15.0),  # Mismo valor que ST001
+    ST003 = c(10.0, 15.0)   # Mismo valor que ST001
+  )
+
+  BD_Coord_constant <- data.table::data.table(
+    Cod = c("ST001", "ST002", "ST003"),
+    X = c(500000, 501000, 502000),
+    Y = c(9500000, 9501000, 9502000)
+  )
+
+  # Ejecutar Kriging con valores constantes
+  result <- Kriging_Ordinary(
+    BD_Obs = BD_Obs_constant,
+    BD_Coord = BD_Coord_constant,
+    shapefile = shapefile,
+    grid_resolution = 10,
+    variogram_model = "exponential"
+  )
+
+  # Verificar que devuelve un resultado válido
+  expect_s4_class(result, "SpatRaster")
+  expect_true(terra::nlyr(result) == 2)
+
+  # Los valores del raster deberían ser constantes (iguales al valor de entrada)
+  values_layer1 <- terra::values(result[[1]], na.rm = TRUE)
+  expect_true(all(abs(values_layer1 - 10.0) < 0.01, na.rm = TRUE))
+})
+
+# Test 27: Caso que fuerza el cálculo del variograma empírico con datos límite
+test_that("Kriging handles edge cases in empirical variogram calculation", {
+  # Crear datos con muy poca variabilidad espacial
+  BD_Obs_edge <- data.table::data.table(
+    Date = as.Date("2015-01-01"),
+    ST001 = 0.001,  # Valores muy pequeños para forzar variograma plano
+    ST002 = 0.002,
+    ST003 = 0.001
+  )
+
+  BD_Coord_edge <- data.table::data.table(
+    Cod = c("ST001", "ST002", "ST003"),
+    X = c(500000, 500100, 500200),  # Estaciones muy cercanas
+    Y = c(9500000, 9500100, 9500200)
+  )
+
+  # Ejecutar con n_lags específico para cubrir la secuencia en el código
+  result <- Kriging_Ordinary(
+    BD_Obs = BD_Obs_edge,
+    BD_Coord = BD_Coord_edge,
+    shapefile = shapefile,
+    grid_resolution = 5,
+    variogram_model = "exponential",
+    n_lags = 10  # Específicamente para cubrir la línea del lag_distances
+  )
+
+  expect_s4_class(result, "SpatRaster")
+})
+
+# Test 28: Caso con una sola estación disponible (available_values de longitud 1)
+test_that("Kriging handles single available station", {
+  # Crear datos donde solo una estación tiene datos válidos por fecha
+  BD_Obs_single <- data.table::data.table(
+    Date = as.Date(c("2015-01-01", "2015-01-02")),
+    ST001 = c(5.0, NA),    # Solo válida el primer día
+    ST002 = c(NA, 8.0),    # Solo válida el segundo día
+    ST003 = c(NA, NA)      # Nunca válida
+  )
+
+  BD_Coord_single <- data.table::data.table(
+    Cod = c("ST001", "ST002", "ST003"),
+    X = c(500000, 501000, 502000),
+    Y = c(9500000, 9501000, 9502000)
+  )
+
+  result <- Kriging_Ordinary(
+    BD_Obs = BD_Obs_single,
+    BD_Coord = BD_Coord_single,
+    shapefile = shapefile,
+    grid_resolution = 8,
+    variogram_model = "spherical"
+  )
+
+  expect_s4_class(result, "SpatRaster")
+  expect_true(terra::nlyr(result) == 2)
+})
+
+# Test 29: Caso específico para cubrir la condición when available_values is empty
+test_that("Kriging handles completely empty available values", {
+  # Crear datos donde todas las estaciones son NA para una fecha
+  BD_Obs_empty <- data.table::data.table(
+    Date = as.Date(c("2015-01-01", "2015-01-02")),
+    ST001 = c(NA, 5.0),
+    ST002 = c(NA, 3.0),
+    ST003 = c(NA, 4.0)
+  )
+
+  BD_Coord_empty <- data.table::data.table(
+    Cod = c("ST001", "ST002", "ST003"),
+    X = c(500000, 501000, 502000),
+    Y = c(9500000, 9501000, 9502000)
+  )
+
+  result <- Kriging_Ordinary(
+    BD_Obs = BD_Obs_empty,
+    BD_Coord = BD_Coord_empty,
+    shapefile = shapefile,
+    grid_resolution = 10,
+    variogram_model = "gaussian"
+  )
+
+  expect_s4_class(result, "SpatRaster")
+  # El primer layer debería tener valor 0 (caso else en el código)
+  values_layer1 <- terra::values(result[[1]], na.rm = TRUE)
+  expect_true(all(values_layer1 == 0, na.rm = TRUE))
+})
+
