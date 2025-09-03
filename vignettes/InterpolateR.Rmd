@@ -18,6 +18,8 @@ Among the traditional interpolation techniques included are:
 
 -   **Cressman Objective Analysis Method (Cressman)**: A powerful approach that iteratively refines interpolated values based on surrounding observations.
 
+-   **Ordinary Kriging**: A geostatistical interpolation technique that provides the best linear unbiased estimator (BLUE) for spatial data by incorporating the spatial correlation structure through variogram modeling.
+
 Additionally, `InterpolateR` incorporates advanced machine learning-based interpolation techniques:
 
 -   **RFmerge**: A Random Forest-based method designed to merge multiple precipitation products and ground observations to enhance interpolation accuracy.
