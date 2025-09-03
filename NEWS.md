@@ -1,12 +1,17 @@
 # Version 1.4-4 (Development)
 
 ### New Features
+
 - The entire Cressman algorithm code has been refactored, which has accelerated its execution speed.
 - The “n_round” functionality has been added to the Cressman algorithm, which allows the final layers to be rounded.
+- The IDW algorithm has been redesigned, ensuring faster execution time and resource consumption.
+- A new parameter called “mask” has been added to the IDW algorithm, allowing the final file to be cropped and masked based on the input polygon.
+- The Altitude “Z” parameter is no longer required when running IDW or Cressman.
+- The ordinary kriging method has been added.
 ### Bug Fixed
-- An error that occurred if the “Z” column was not passed in BD_Coords when it was not mandatory has been corrected.
-- Add interpolation method Kriging Ordinary.
 
+- An error that occurred if the “Z” column was not passed in BD_Coords when it was not mandatory has been corrected.
+- Typos in the IDW documentation have been corrected.
 
 # Version 1.3-4 (Development)
 

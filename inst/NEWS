@@ -1,24 +1,20 @@
 ================================================================================
-                               Version 1.3-4 (CRAN)
+                               Version 1.4-4 (CRAN)
 ================================================================================
 # Expected Release Date: 2025-05-01
 
 ### New Features
 
--   We added new goodness-of-fit metrics, including: Mean Squared Error (MSE), pearson's Correlation, Coefficient of Determination (R-squared)
--   We performed a refactoring of the project for its future maintenance and addition of new functionalities.
--   We have removed hydroGOF dependencies for the calculation of goodness-of-fit metrics. The metrics will now be hosted as internal functions.
--   We have added a new function to create a file similar to BD_Obs from several csv files.
--   We have restructured the RFmerge logic, reducing the execution time by 50%.
--   We have restructured the RFplus logic, reducing the execution time by 50%.
--   We have removed the RFplus validation that prevented you from limiting the Date to be only of "Date", "IDate" or "Posixct" format. Now, you can enter any format for the date.
--   We add the function “create_data” to create the BD_Obs file from multiple individual files.
+- The ordinary kriging method has been added.
+- The entire Cressman algorithm code has been refactored, which has accelerated its execution speed.
+- The “n_round” functionality has been added to the Cressman algorithm, which allows the final layers to be rounded.
+- The IDW algorithm has been redesigned, ensuring faster execution time and resource consumption.
+- A new parameter called “mask” has been added to the IDW algorithm, allowing the final file to be cropped and masked based on the input polygon.
+- The Altitude “Z” parameter is no longer required when running IDW or Cressman.
 
 ### Bug Fixed
 
--   Fixed several bugs within the RFmerge tests
--   We have fixed a bug in RFplus and RFmerge that caused the algorithm not to compile when the layer “DEM” was entered with a name other than "DEM". After fixing this bug, the user will be able to set any name for this layer.
--   We have corrected bugs in the RFmerge and RFplus algorithms that prevented interpolations to a scale other than daily. Now, these algorithms allow interpolation to any time scale (from minutes) to years or other time scales.
--   We have fixed a bug in the IDW and Cressman algorithm, which caused BD_Obs data to be transformed to daily format, regardless of the scale entered. This bug did not allow interpolations to hourly or smaller scales.
+- An error that occurred if the “Z” column was not passed in BD_Coords when it was not mandatory has been corrected.
+- Typos in the IDW documentation have been corrected.
 
 
