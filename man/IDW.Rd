@@ -10,6 +10,7 @@ IDW(
   shapefile,
   grid_resolution,
   p = 2,
+  Mask = T,
   n_round = NULL,
   training = 1,
   stat_validation = NULL,
@@ -55,10 +56,17 @@ The shapefile must be of class \code{SpatVector} (from the \code{terra} package)
 
 \item{grid_resolution}{A numeric value indicating the resolution of the interpolation grid in kilometers (\code{km}).}
 
-\item{p}{'Numeric' value that controls how the influence decreases with distance. The default value is 2}
+\item{p}{'Numeric' value that controls how the influence decreases with distance. The default value is 2.}
+
+\item{Mask}{Indicates whether spatial masking should be applied to the interpolation result using the input shapefile.
+\itemize{
+\item \code{TRUE}: The returned \code{Assembly} is clipped to the extent of the polygon and masked, so that cells outside the polygon are set to \code{NA}.
+\item \code{FALSE}: The Assembly is returned in full, without clipping or masking.
+The default value is TRUE.
+}}
 
 \item{n_round}{An integer specifying the number of decimal places to round the interpolated results.
-If set to \code{NULL}, all decimal places will be preserved. The default value is \code{1}.}
+If set to \code{NULL}, all decimal places will be preserved.}
 
 \item{training}{Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 \% of the data will be used for training and 20 \% for validation.
 If you do not want to perform validation, set training = 1. (Default training = 1).}
