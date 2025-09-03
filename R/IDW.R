@@ -31,9 +31,13 @@
 #' @param shapefile A shapefile defining the study area, used to constrain the interpolation to the region of interest.
 #'   The shapefile must be of class `SpatVector` (from the `terra` package) and should have a UTM coordinate reference system.
 #' @param grid_resolution A numeric value indicating the resolution of the interpolation grid in kilometers (`km`).
-#' @param p 'Numeric' value that controls how the influence decreases with distance. The default value is 2
+#' @param p 'Numeric' value that controls how the influence decreases with distance. The default value is 2.
+#' @param Mask Indicates whether spatial masking should be applied to the interpolation result using the input shapefile.
+#'   - `TRUE`: The returned `Assembly` is clipped to the extent of the polygon and masked, so that cells outside the polygon are set to `NA`.
+#'   - `FALSE`: The Assembly is returned in full, without clipping or masking.
+#' The default value is TRUE.
 #' @param n_round An integer specifying the number of decimal places to round the interpolated results.
-#'   If set to `NULL`, all decimal places will be preserved. The default value is `1`.
+#'   If set to `NULL`, all decimal places will be preserved.
 #' @param training Numerical value between 0 and 1 indicating the proportion of data used for model training. The remaining data are used for validation. Note that if you enter, for example, 0.8 it means that 80 % of the data will be used for training and 20 % for validation.
 #' If you do not want to perform validation, set training = 1. (Default training = 1).
 #' @param stat_validation A character vector specifying the names of the stations to be used for validation.
@@ -119,6 +123,7 @@ IDW <- function(
   shapefile,
   grid_resolution,
   p = 2,
+  Mask = T,
   n_round = NULL,
   training = 1,
   stat_validation = NULL,
@@ -133,27 +138,45 @@ IDW <- function(
     stop("shapefile must be a 'SpatVector' object.")
   }
 
+  if (is.null(terra::crs(shapefile))) {
+    stop("shapefile CRS is undefined.")
+  }
+
+  # We require projected CRS (not lon/lat) to work in meters.
+  if (terra::is.lonlat(shapefile)) {
+    stop(
+      "shapefile must use a projected CRS (meters). Reproject before calling IDW."
+    )
+  }
+
   # BD_Obs can be a data.table or a data.frame
   if (!inherits(BD_Obs, c("data.table", "data.frame"))) {
     stop("BD_Obs must be a 'data.table' or a 'data.frame'.")
   }
-  names(BD_Obs)[1] <- "Date"
 
   # BD_Coord can be a data.table or a data.frame
   if (!inherits(BD_Coord, c("data.table", "data.frame"))) {
     stop("BD_Coord must be a 'data.table' or a 'data.frame'.")
   }
-
   # Check that the coordinate names appear in the observed data
   if (!all(BD_Coord$Cod %in% base::setdiff(names(BD_Obs), "Date"))) {
     stop("The names of the coordinates do not appear in the observed data.")
   }
+  data.table::setDT(BD_Obs)
+  data.table::setDT(BD_Coord)
+
+  if (!is.numeric(grid_resolution) || length(grid_resolution) != 1L) {
+    stop("'grid_resolution' must be a single numeric value in km.")
+  }
+
+  names(BD_Coord)[1:3] = c("Cod", "X", "Y")
+  names(BD_Obs)[1] = "Date"
   ##############################################################################
   #                          Verify if validation is to be done                #
   ##############################################################################
   names_col <- base::setdiff(names(BD_Obs), "Date")
-  Ids <- data.table::data.table(Cod = names_col, ID = 1:length(names_col))
-  if (training != 1 | !is.null(stat_validation)) {
+  Ids <- data.table::data.table(Cod = names_col, ID = seq_along(names_col))
+  if (training != 1 || !is.null(stat_validation)) {
     data_val <- .select_data(
       BD_Obs,
       BD_Coord,
@@ -163,146 +186,219 @@ IDW <- function(
     train_data <- data_val$train_data
     train_cords <- data_val$train_cords
   } else {
-    message(
-      "The training parameter was not entered. The model will be trained with all the data."
-    )
+    message("Training not specified; using all data for training.")
     train_data <- BD_Obs
     train_cords <- BD_Coord
   }
+  data.table::setDT(train_data)
+  data.table::setDT(train_cords)
   ##############################################################################
   #                          Interpolation zone                                #
   ##############################################################################
+  grid_resolution_m <- grid_resolution * 1000 # km -> m
   coord.ref <- terra::crs(shapefile)
-  grid_resolution <- grid_resolution * 1000 # Convert resolution to KM
-
   spl_layer <- terra::rast(
     terra::ext(shapefile),
-    resolution = grid_resolution,
+    resolution = grid_resolution_m,
     crs = coord.ref
   )
 
-  terra::values(spl_layer) <- 0
+  r_zero <- terra::rast(spl_layer)
+  terra::values(r_zero) <- 0
+  r_na <- terra::rast(spl_layer)
+  terra::values(r_na) <- NA_real_
   ##############################################################################
   #                           Data training                                    #
   ##############################################################################
   IDW_data <- data.table::melt(
     train_data,
     id.vars = "Date",
+    measure.vars = base::setdiff(names(train_data), "Date"),
     variable.name = "Cod",
-    value.name = "var"
+    value.name = "var",
+    variable.factor = FALSE
   )
 
-  IDW_data <- Ids[IDW_data, on = "Cod"]
-  Dates_extracted <- base::unique(IDW_data[, Date])
-  Points_Train <- base::merge(IDW_data, train_cords, by = "Cod")
-  data.table::setDT(Points_Train)
+  data.table::setkey(IDW_data, Cod)
+  data.table::setkey(Ids, Cod)
+  IDW_data <- Ids[IDW_data]
+  train_cords = Ids[train_cords, on = "Cod"]
 
-  # Points_Train <- base::unique(Points_Train, by = "Cod")[, .(ID, Cod, X, Y, Z)]
-  Points_Train <- unique(Points_Train, by = "Cod")[, .(ID, Cod, X, Y)]
-  data.table::setorder(Points_Train, ID)
+  Dates_extracted <- sort(unique(IDW_data$Date))
+
+  pairs_ID_Cod = unique(IDW_data[, .(ID, Cod)], by = "Cod")
+  cols_coords = c("ID", "Cod", "X", "Y")
+
+  # MERGE
+  Points_Train = train_cords[, ..cols_coords][
+    pairs_ID_Cod,
+    on = .(ID, Cod)
+  ]
 
   Points_VectTrain <- terra::vect(
     Points_Train,
     geom = c("X", "Y"),
     crs = coord.ref
   )
+
+  estaciones <- Points_Train$Cod
+  n_est <- length(estaciones)
   ##############################################################################
   #                          IDW algotithm                                     #
   ##############################################################################
-  data_IDW <- data.table::as.data.table(terra::as.data.frame(
-    spl_layer,
-    xy = TRUE
-  ))
-  data_IDW <- data_IDW[, .(X = x, Y = y)]
-  coords <- as.matrix(data_IDW[, .(X, Y)])
-  distancias <- data.table::as.data.table(terra::distance(
-    terra::vect(coords, crs = coord.ref),
-    Points_VectTrain
-  ))
-  data.table::setnames(distancias, Points_VectTrain$Cod)
-  data_IDW <- cbind(data_IDW, distancias)
+  grid_xy <- terra::as.data.frame(r_zero, xy = TRUE, cells = TRUE)[, c(
+    "x",
+    "y",
+    "cell"
+  )]
+  data.table::setDT(grid_xy)
+  data.table::setnames(grid_xy, c("x", "y", "cell"), c("X", "Y", "cell"))
+  data.table::setorder(grid_xy, cell)
+  n_cells <- nrow(grid_xy)
 
-  estaciones <- as.character(Points_VectTrain$Cod)
-  denoms <- lapply(estaciones, function(est) 1 / (data_IDW[[est]]^p))
-  denoms_dt <- data.table::setnames(
-    data.table::as.data.table(denoms),
-    paste0("d_", estaciones)
+  # Distance matrix (n_cells x n_est)
+  dist_mat <- as.matrix(
+    data.table::as.data.table(
+      terra::distance(
+        terra::vect(as.matrix(grid_xy[, .(X, Y)]), crs = coord.ref),
+        Points_VectTrain
+      )
+    )
+  )
+  colnames(dist_mat) <- estaciones
+
+  # For d=0, we will control separately (exact value)
+  withCallingHandlers(
+    {
+      w_base <- dist_mat^(-p)
+    },
+    warning = function(w) {
+      invokeRestart("muffleWarning")
+    }
   )
 
-  idw <- function(data_obs) {
-    obs_values <- stats::setNames(data_obs$var, data_obs$Cod)
-    nums <- lapply(estaciones, function(est) {
-      if (est %in% names(obs_values)) {
-        obs_values[est] / (data_IDW[[est]]^p)
-      } else {
-        rep(NA_real_, nrow(data_IDW))
-      }
-    })
-
-    nums_dt <- data.table::setnames(
-      data.table::as.data.table(nums),
-      paste0("n_", estaciones)
-    )
-    result <- data_IDW[, .(X, Y)]
-    result[, sum_n := rowSums(nums_dt, na.rm = TRUE)]
-    result[, sum_d := rowSums(denoms_dt, na.rm = TRUE)]
-    result[, value := sum_n / sum_d]
-    result <- result[, .(X, Y, value)]
-    result <- terra::rast(result, crs = coord.ref)
-    return(result)
+  # Function to construct a raster from a vector of values
+  make_raster_from_vec <- function(vals) {
+    r <- terra::rast(r_na)
+    terra::values(r) <- vals
+    r
   }
 
-  call_idw <- function(day) {
-    data_obs <- IDW_data[Date == day, ]
-    if (sum(data_obs$var, na.rm = TRUE) == 0) {
-      return(spl_layer)
+  # IDW predictions
+  idw_predict <- function(data_obs) {
+    obs_vec <- data_obs$var[match(estaciones, data_obs$Cod)]
+    not_na <- !is.na(obs_vec)
+
+    # --- Early returns ---
+    # a) Day with at least one data point and ALL data points (non-NA) are 0  -> raster of zeros
+    if (any(not_na)) {
+      eps <- 1e-12
+      if (all(abs(obs_vec[not_na]) < eps)) {
+        return(r_zero)
+      }
     } else {
-      return((idw(data_obs)))
+      # b)  Day without useful data (all NA): return NAs
+      return(r_na)
     }
+
+    # Standard IDW (we already know that there is data and it is not all 0)
+    has_obs <- not_na
+    w <- w_base[, has_obs, drop = FALSE]
+    o <- obs_vec[has_obs]
+
+    # Zero distance handling: the cell takes the observed value (average if multiple colocalized)
+    zero_cols <- which(colSums(dist_mat[, has_obs, drop = FALSE] == 0) > 0)
+    pred <- NULL
+    if (length(zero_cols) > 0L) {
+      pred <- rep(NA_real_, n_cells)
+      hit_count <- integer(n_cells)
+      for (k in zero_cols) {
+        j <- which(has_obs)[k]
+        idx <- which(dist_mat[, j] == 0)
+        if (length(idx)) {
+          pred[idx] <- ifelse(
+            is.na(pred[idx]),
+            o[k],
+            (pred[idx] * hit_count[idx] + o[k]) / (hit_count[idx] + 1L)
+          )
+          hit_count[idx] <- hit_count[idx] + 1L
+        }
+      }
+      need_idw <- which(is.na(pred))
+      if (length(need_idw)) {
+        numer <- as.vector(w[need_idw, , drop = FALSE] %*% o)
+        denom <- rowSums(w[need_idw, , drop = FALSE], na.rm = TRUE)
+        vals <- numer / denom
+        vals[!is.finite(vals) | denom == 0] <- NA_real_
+        pred[need_idw] <- vals
+      }
+    } else {
+      numer <- as.vector(w %*% o)
+      denom <- rowSums(w, na.rm = TRUE)
+      pred <- numer / denom
+      pred[!is.finite(pred) | denom == 0] <- NA_real_
+    }
+    make_raster_from_vec(pred)
+  }
+
+  # Wrapper for date
+  call_idw <- function(day) {
+    data_obs <- IDW_data[Date == day, .(Cod, var)]
+    idw_predict(data_obs)
   }
 
   pbapply::pboptions(type = "timer", use_lb = FALSE, style = 1, char = "=")
   message("Analysis in progress. Please wait...")
-  raster_Model <- pbapply::pblapply(Dates_extracted, function(day) {
-    call_idw(day)
-  })
+  raster_Model <- pbapply::pblapply(Dates_extracted, call_idw)
 
+  # Ensamble
   Ensamble <- terra::rast(raster_Model)
   if (!is.null(n_round)) {
-    Ensamble <- terra::app(Ensamble, \(x) round(x, n_round))
+    Ensamble <- terra::app(Ensamble, function(x) round(x, n_round))
   }
   names(Ensamble) <- as.character(Dates_extracted)
 
   ##############################################################################
   #                           Perform validation if established                #
   ##############################################################################
-  if (training != 1 | !is.null(stat_validation)) {
-    test_cords <- data_val$test_cords
-    test_data <- data_val$test_data
+  if (training != 1 || !is.null(stat_validation)) {
     final_results <- .validate(
-      test_cords,
-      test_data,
+      test_cords = data_val$test_cords,
+      test_data = data_val$test_data,
       crss = coord.ref,
-      Ensamble,
+      Ensamble = Ensamble,
       Rain_threshold = Rain_threshold
+    )
+  }
+  ##############################################################################
+  #                            Mask if Mask = T                                #
+  ##############################################################################
+  if (isTRUE(Mask)) {
+    Ensamble <- terra::mask(
+      terra::crop(Ensamble, shapefile, snap = "out"),
+      shapefile
     )
   }
   ##############################################################################
   #                           Save the model if necessary                      #
   ##############################################################################
-  if (save_model) {
-    message("Model saved successfully")
+  if (isTRUE(save_model)) {
     if (is.null(name_save)) {
       name_save <- "Model_IDW"
     }
-    name_saving <- paste0(name_save, ".nc")
-    terra::writeCDF(Ensamble, filename = name_saving, overwrite = TRUE)
+    terra::writeCDF(
+      Ensamble,
+      filename = paste0(name_save, ".nc"),
+      overwrite = TRUE
+    )
+    message("Model saved successfully")
   }
   ##############################################################################
   #                                      Return                                #
   ##############################################################################
-  if (training != 1 | !is.null(stat_validation)) {
+  if (training != 1 || !is.null(stat_validation)) {
     return(list(Ensamble = Ensamble, Validation = final_results))
+  } else {
+    return(Ensamble)
   }
-  if (training == 1 & is.null(stat_validation)) return(Ensamble)
 }
